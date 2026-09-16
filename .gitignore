@@ -1,0 +1,76 @@
+# =============================================================================
+# CampusFind .gitignore
+# Covers React/Vite/Tailwind (Frontend) and Maven/Java Servlets (Backend)
+# =============================================================================
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Environment and Secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Node / Frontend (Vite, React)
+node_modules/
+dist/
+dist-ssr/
+build/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Java / Backend (Maven, Servlets, Tomcat)
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Logs and Runtime Files
+*.log
+logs/
+*.tmp
+*.bak
+
+# IDEs and Editors
+# JetBrains (IntelliJ IDEA)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Visual Studio Code (user-specific files ignored, team configs preserved)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
