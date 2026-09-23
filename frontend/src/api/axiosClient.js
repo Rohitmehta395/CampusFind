@@ -18,4 +18,29 @@ axiosClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+// Response interceptor: handle token expiration / 401 Unauthorized responses globally
+axiosClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const requestUrl = error.config?.url || ''
+      // Skip global redirect for auth endpoints (login/register) to preserve inline form error handling
+      const isAuthEndpoint =
+        requestUrl.includes('/api/auth/login') ||
+        requestUrl.includes('/api/auth/register')
+
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('campusfind_token')
+        localStorage.removeItem('campusfind_user')
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  window.axiosClient = axiosClient
+}
+
 export default axiosClient
