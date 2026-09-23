@@ -7,4 +7,24 @@
 
     <display-name>CampusFind Backend</display-name>
 
+    <!-- Enforce filter execution order: CorsFilter must always precede security filters -->
+    <filter>
+        <filter-name>CorsFilter</filter-name>
+        <filter-class>com.campusfind.filters.CorsFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CorsFilter</filter-name>
+        <url-pattern>/api/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>AuthFilter</filter-name>
+        <filter-class>com.campusfind.filters.AuthFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AuthFilter</filter-name>
+        <url-pattern>/api/users</url-pattern>
+        <url-pattern>/api/users/*</url-pattern>
+    </filter-mapping>
+
 </web-app>
