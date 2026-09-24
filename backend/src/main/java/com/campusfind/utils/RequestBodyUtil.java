@@ -143,5 +143,99 @@ public final class RequestBodyUtil {
             this.password = password;
         }
     }
+
+    /**
+     * Data Transfer Object for item creation requests.
+     * Note: reporterId is intentionally omitted so client payloads cannot override it.
+     */
+    public static class CreateItemRequest {
+        private String type;
+        private String title;
+        private String category;
+        private String color;
+        private String brand;
+        private String description;
+        private String locationText;
+        private String eventDate; // ISO yyyy-MM-dd format
+
+        public CreateItemRequest() {
+        }
+
+        public CreateItemRequest(String type, String title, String category, String color,
+                                 String brand, String description, String locationText, String eventDate) {
+            this.type = type;
+            this.title = title;
+            this.category = category;
+            this.color = color;
+            this.brand = brand;
+            this.description = description;
+            this.locationText = locationText;
+            this.eventDate = eventDate;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public void setCategory(String category) {
+            this.category = category;
+        }
+
+        public String getColor() {
+            return color;
+        }
+
+        public void setColor(String color) {
+            this.color = color;
+        }
+
+        public String getBrand() {
+            return brand;
+        }
+
+        public void setBrand(String brand) {
+            this.brand = brand;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public String getLocationText() {
+            return locationText;
+        }
+
+        public void setLocationText(String locationText) {
+            this.locationText = locationText;
+        }
+
+        public String getEventDate() {
+            return eventDate;
+        }
+
+        public void setEventDate(String eventDate) {
+            this.eventDate = eventDate;
+        }
+    }
 }
 
