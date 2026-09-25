@@ -155,6 +155,7 @@ public final class RequestBodyUtil {
         private String color;
         private String brand;
         private String description;
+        private String imageUrl;
         private String locationText;
         private String eventDate; // ISO yyyy-MM-dd format
 
@@ -163,12 +164,19 @@ public final class RequestBodyUtil {
 
         public CreateItemRequest(String type, String title, String category, String color,
                                  String brand, String description, String locationText, String eventDate) {
+            this(type, title, category, color, brand, description, null, locationText, eventDate);
+        }
+
+        public CreateItemRequest(String type, String title, String category, String color,
+                                 String brand, String description, String imageUrl,
+                                 String locationText, String eventDate) {
             this.type = type;
             this.title = title;
             this.category = category;
             this.color = color;
             this.brand = brand;
             this.description = description;
+            this.imageUrl = imageUrl;
             this.locationText = locationText;
             this.eventDate = eventDate;
         }
@@ -219,6 +227,14 @@ public final class RequestBodyUtil {
 
         public void setDescription(String description) {
             this.description = description;
+        }
+
+        public String getImageUrl() {
+            return imageUrl;
+        }
+
+        public void setImageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
         }
 
         public String getLocationText() {
