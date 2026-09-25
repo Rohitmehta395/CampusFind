@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -43,6 +45,47 @@ public class ItemDAO {
                 rs.getString("status"),
                 createdAt
         );
+    }
+
+    /**
+     * Retrieves all items from the database, ordered newest-first by created_at.
+     *
+     * @return list of all items ordered by created_at descending
+     * @throws SQLException if a database access error occurs
+     */
+    public List<Item> findAll() throws SQLException {
+        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at FROM items ORDER BY created_at DESC";
+        List<Item> items = new ArrayList<>();
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                items.add(mapRow(rs));
+            }
+        }
+        return items;
+    }
+
+    /**
+     * Retrieves all items reported by a specific user, ordered newest-first by created_at.
+     *
+     * @param reporterId the user's ID
+     * @return list of items reported by the user ordered by created_at descending
+     * @throws SQLException if a database access error occurs
+     */
+    public List<Item> findByReporterId(Long reporterId) throws SQLException {
+        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at FROM items WHERE reporter_id = ? ORDER BY created_at DESC";
+        List<Item> items = new ArrayList<>();
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, reporterId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapRow(rs));
+                }
+            }
+        }
+        return items;
     }
 
     /**

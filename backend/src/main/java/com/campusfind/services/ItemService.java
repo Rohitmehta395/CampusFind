@@ -1,11 +1,13 @@
 package com.campusfind.services;
 
 import com.campusfind.dao.ItemDAO;
+import com.campusfind.exceptions.NotFoundException;
 import com.campusfind.exceptions.ValidationException;
 import com.campusfind.models.Item;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Service layer handling business logic and validation for Item entities.
@@ -20,6 +22,48 @@ public class ItemService {
 
     public ItemService(ItemDAO itemDAO) {
         this.itemDAO = itemDAO;
+    }
+
+    /**
+     * Retrieves all items from the system ordered newest-first.
+     *
+     * @return list of all Item records
+     * @throws SQLException if a database access error occurs
+     */
+    public List<Item> getAllItems() throws SQLException {
+        return itemDAO.findAll();
+    }
+
+    /**
+     * Retrieves all items reported by a specific user ordered newest-first.
+     *
+     * @param reporterId the user's primary key ID
+     * @return list of Item records reported by the user
+     * @throws ValidationException if reporterId is null or invalid
+     * @throws SQLException        if a database access error occurs
+     */
+    public List<Item> getItemsByReporter(Long reporterId) throws SQLException {
+        if (reporterId == null || reporterId <= 0) {
+            throw new ValidationException("Invalid reporter id", "reporterId");
+        }
+        return itemDAO.findByReporterId(reporterId);
+    }
+
+    /**
+     * Retrieves a single item by its ID.
+     *
+     * @param id the primary key item ID
+     * @return the Item record
+     * @throws ValidationException if id is null or invalid
+     * @throws NotFoundException   if no item exists with the specified ID
+     * @throws SQLException        if a database access error occurs
+     */
+    public Item getItemById(Long id) throws SQLException {
+        if (id == null || id <= 0) {
+            throw new ValidationException("Invalid item id", "id");
+        }
+        return itemDAO.findById(id)
+                .orElseThrow(() -> new NotFoundException("Item not found"));
     }
 
     /**

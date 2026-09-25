@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { checkHealth } from '../api/health'
 
 /**
- * Home page component preserving the Phase 1E backend health check display.
+ * Home page component preserving the Phase 1E backend health check display
+ * and providing a primary call-to-action to browse items.
  */
 export default function HomePage() {
   const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'error'
@@ -39,6 +41,15 @@ export default function HomePage() {
       <p className="mt-2 text-sm text-slate-500 font-medium">
         Smart Campus Lost &amp; Found
       </p>
+
+      <div className="mt-6 flex flex-col gap-2.5">
+        <Link
+          to="/browse"
+          className="w-full py-2.5 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition-colors shadow-xs"
+        >
+          Browse All Items
+        </Link>
+      </div>
 
       <div className="mt-6 pt-6 border-t border-slate-100">
         {status === 'loading' && (

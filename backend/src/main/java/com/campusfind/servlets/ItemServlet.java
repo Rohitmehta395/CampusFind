@@ -15,12 +15,14 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 /**
- * Servlet managing lost and found item resources at /api/items.
- * Enforces authentication on POST via AuthUtil (while leaving future GET public for mixed access).
+ * Servlet managing lost and found item resources at /api/items and /api/items/*.
+ * Supports public browsing (GET /api/items, GET /api/items/{id}), authenticated user items (GET /api/items/mine),
+ * and authenticated item creation (POST /api/items).
  */
-@WebServlet("/api/items")
+@WebServlet(urlPatterns = {"/api/items", "/api/items/*"})
 public class ItemServlet extends BaseServlet {
 
     private final ItemService itemService;
@@ -31,6 +33,40 @@ public class ItemServlet extends BaseServlet {
 
     public ItemServlet(ItemService itemService) {
         this.itemService = itemService;
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        handle(request, response, (req, res) -> {
+            String pathInfo = req.getPathInfo();
+
+            if (pathInfo == null || pathInfo.equals("/") || pathInfo.isEmpty()) {
+                // GET /api/items -> public list of all items ordered newest-first
+                List<Item> items = itemService.getAllItems();
+                String json = formatItemListJson(items);
+                JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
+            } else if ("/mine".equalsIgnoreCase(pathInfo.trim())) {
+                // GET /api/items/mine -> authenticated caller's own reported items
+                Long reporterId = AuthUtil.requireAuthenticatedUserId(req);
+                List<Item> items = itemService.getItemsByReporter(reporterId);
+                String json = formatItemListJson(items);
+                JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
+            } else {
+                // GET /api/items/{id} -> single item detail, 404 if not found
+                String idStr = pathInfo.startsWith("/") ? pathInfo.substring(1).trim() : pathInfo.trim();
+                Long itemId;
+                try {
+                    itemId = Long.parseLong(idStr);
+                } catch (NumberFormatException e) {
+                    throw new ValidationException("Invalid item id", "id");
+                }
+
+                Item item = itemService.getItemById(itemId);
+                String json = formatItemJson(item);
+                JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
+            }
+        });
     }
 
     @Override
@@ -70,6 +106,19 @@ public class ItemServlet extends BaseServlet {
             String json = formatItemJson(createdItem);
             JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_CREATED, json);
         });
+    }
+
+    private String formatItemListJson(List<Item> items) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"items\":[");
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append(formatItemJson(items.get(i)));
+        }
+        sb.append("]}");
+        return sb.toString();
     }
 
     private String formatItemJson(Item item) {

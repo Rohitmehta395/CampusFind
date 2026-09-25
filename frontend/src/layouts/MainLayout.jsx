@@ -1,9 +1,22 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 /**
  * Main layout component providing top navigation shell and child route outlet.
+ * Conditionally displays authenticated navigation links ("Report Lost", "Report Found", "Logout")
+ * when a user is signed in, or unauthenticated links ("Login", "Register") when signed out.
+ * "Home" and "Browse" remain publicly accessible in both auth states.
  */
 export default function MainLayout() {
+  const { user, logout } = useAuth()
+
+  const navLinkClasses = ({ isActive }) =>
+    `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+      isActive
+        ? 'bg-slate-100 text-slate-900'
+        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+    }`
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
       {/* Top Navbar */}
@@ -16,55 +29,46 @@ export default function MainLayout() {
             CampusFind
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`
-              }
-            >
+            <NavLink to="/" end className={navLinkClasses}>
               Home
             </NavLink>
-            <NavLink
-              to="/login"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`
-              }
-            >
-              Login
+
+            <NavLink to="/browse" className={navLinkClasses}>
+              Browse
             </NavLink>
-            <NavLink
-              to="/register"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`
-              }
-            >
-              Register
-            </NavLink>
-            <NavLink
-              to="/my-listings"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`
-              }
-            >
-              My Listings
-            </NavLink>
+
+            {user ? (
+              <>
+                <NavLink to="/report-lost" className={navLinkClasses}>
+                  Report Lost
+                </NavLink>
+                <NavLink to="/report-found" className={navLinkClasses}>
+                  Report Found
+                </NavLink>
+                <NavLink to="/my-listings" className={navLinkClasses}>
+                  My Listings
+                </NavLink>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login" className={navLinkClasses}>
+                  Login
+                </NavLink>
+                <NavLink to="/register" className={navLinkClasses}>
+                  Register
+                </NavLink>
+                <NavLink to="/my-listings" className={navLinkClasses}>
+                  My Listings
+                </NavLink>
+              </>
+            )}
           </nav>
         </div>
       </header>
