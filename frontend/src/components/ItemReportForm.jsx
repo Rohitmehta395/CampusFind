@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createItemRequest } from '../api/items'
+import ImageUploader from './ImageUploader'
 
 const CATEGORY_OPTIONS = [
   'Electronics',
@@ -36,6 +37,8 @@ export default function ItemReportForm({ type }) {
     locationText: '',
     eventDate: '',
   })
+  const [imageUrl, setImageUrl] = useState('')
+  const [uploadError, setUploadError] = useState('')
 
   const [error, setError] = useState('')
   const [errorField, setErrorField] = useState('')
@@ -63,6 +66,7 @@ export default function ItemReportForm({ type }) {
       await createItemRequest({
         type,
         ...formData,
+        imageUrl: imageUrl.trim() || undefined,
       })
 
       setSuccessMsg(
@@ -288,6 +292,25 @@ export default function ItemReportForm({ type }) {
                 : 'border-slate-300'
             }`}
           />
+        </div>
+
+        {/* Photo Upload (Optional) */}
+        <div>
+          <ImageUploader
+            currentImageUrl={imageUrl}
+            onUploadComplete={(url) => {
+              setImageUrl(url)
+              setUploadError('')
+            }}
+            onUploadError={(msg) => {
+              setUploadError(msg)
+            }}
+          />
+          {uploadError && (
+            <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+              Note: Image upload could not be completed ({uploadError}). You may still submit your report without an image or try uploading again.
+            </p>
+          )}
         </div>
 
         {/* Submit Button */}

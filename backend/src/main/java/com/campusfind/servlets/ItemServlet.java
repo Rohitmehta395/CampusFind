@@ -98,6 +98,7 @@ public class ItemServlet extends BaseServlet {
                     dto.getColor(),
                     dto.getBrand(),
                     dto.getDescription(),
+                    dto.getImageUrl(),
                     dto.getLocationText(),
                     eventDate
             );

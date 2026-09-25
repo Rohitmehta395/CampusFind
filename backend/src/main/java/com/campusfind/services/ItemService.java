@@ -76,6 +76,7 @@ public class ItemService {
      * @param color        optional color description
      * @param brand        optional brand description
      * @param description  optional detailed description
+     * @param imageUrl     optional image URL from Cloudinary (max 500 characters)
      * @param locationText optional text description of location
      * @param eventDate    optional date when the item was lost or found
      * @return the created and persisted Item domain object
@@ -84,6 +85,15 @@ public class ItemService {
      */
     public Item createItem(Long reporterId, String type, String title, String category,
                            String color, String brand, String description,
+                           String locationText, LocalDate eventDate) throws SQLException {
+        return createItem(reporterId, type, title, category, color, brand, description, null, locationText, eventDate);
+    }
+
+    /**
+     * Validates input and creates a new lost or found item including optional image URL.
+     */
+    public Item createItem(Long reporterId, String type, String title, String category,
+                           String color, String brand, String description, String imageUrl,
                            String locationText, LocalDate eventDate) throws SQLException {
         if (reporterId == null || reporterId <= 0) {
             throw new ValidationException("Invalid reporter id", "reporterId");
@@ -124,6 +134,16 @@ public class ItemService {
         }
 
         String cleanDescription = (description != null && !description.trim().isEmpty()) ? description.trim() : null;
+
+        // Validate and clean imageUrl (VARCHAR(500) limit, non-silent rejection on overflow)
+        String cleanImageUrl = null;
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            cleanImageUrl = imageUrl.trim();
+            if (cleanImageUrl.length() > 500) {
+                throw new ValidationException("Image URL is too long", "imageUrl");
+            }
+        }
+
         String cleanLocationText = (locationText != null && !locationText.trim().isEmpty()) ? locationText.trim() : null;
         if (cleanLocationText != null && cleanLocationText.length() > 200) {
             cleanLocationText = cleanLocationText.substring(0, 200);
@@ -138,7 +158,7 @@ public class ItemService {
                 cleanColor,
                 cleanBrand,
                 cleanDescription,
-                null, // imageUrl left null for Phase 7
+                cleanImageUrl,
                 cleanLocationText,
                 null, // latitude left null for Phase 12
                 null, // longitude left null for Phase 12

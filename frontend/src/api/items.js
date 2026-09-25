@@ -33,6 +33,7 @@ export async function createItemRequest(itemData) {
     'color',
     'brand',
     'description',
+    'imageUrl',
     'locationText',
     'eventDate',
   ]
