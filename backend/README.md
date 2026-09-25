@@ -158,6 +158,12 @@ backend/
         │   ├── servlets/
         │   │   ├── HealthCheckServlet.java    # GET /api/health
         │   │   ├── HealthCheckDbServlet.java  # GET /api/health/db
+        │   │   ├── CreateItemServlet.java     # POST /api/items
+        │   │   ├── GetAllItemsServlet.java    # GET /api/items (public list)
+        │   │   ├── GetItemServlet.java        # GET /api/items/:id (detail)
+        │   │   ├── EditItemServlet.java       # PUT /api/items/:id
+        │   │   ├── DeleteItemServlet.java     # DELETE /api/items/:id
+        │   │   ├── MyItemsServlet.java        # GET /api/items/mine (auth)
         │   │   └── package-info.java
         │   ├── services/                      # Business logic layer
         │   ├── dao/                           # JDBC data access objects
