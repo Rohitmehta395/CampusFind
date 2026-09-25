@@ -42,9 +42,34 @@ public class ItemServlet extends BaseServlet {
             String pathInfo = req.getPathInfo();
 
             if (pathInfo == null || pathInfo.equals("/") || pathInfo.isEmpty()) {
-                // GET /api/items -> public list of all items ordered newest-first
-                List<Item> items = itemService.getAllItems();
-                String json = formatItemListJson(items);
+                // GET /api/items -> public list of items with search, filter, and pagination
+                String q = req.getParameter("q");
+                String category = req.getParameter("category");
+                String type = req.getParameter("type");
+                String status = req.getParameter("status");
+
+                Integer page = null;
+                String pageStr = req.getParameter("page");
+                if (pageStr != null && !pageStr.trim().isEmpty()) {
+                    try {
+                        page = Integer.parseInt(pageStr.trim());
+                    } catch (NumberFormatException ignored) {
+                        // Fall back to default page 1 gracefully
+                    }
+                }
+
+                Integer limit = null;
+                String limitStr = req.getParameter("limit");
+                if (limitStr != null && !limitStr.trim().isEmpty()) {
+                    try {
+                        limit = Integer.parseInt(limitStr.trim());
+                    } catch (NumberFormatException ignored) {
+                        // Fall back to default limit gracefully
+                    }
+                }
+
+                ItemService.PagedResult result = itemService.getFilteredItems(q, category, type, status, page, limit);
+                String json = formatPagedItemListJson(result);
                 JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
             } else if ("/mine".equalsIgnoreCase(pathInfo.trim())) {
                 // GET /api/items/mine -> authenticated caller's own reported items
@@ -107,6 +132,26 @@ public class ItemServlet extends BaseServlet {
             String json = formatItemJson(createdItem);
             JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_CREATED, json);
         });
+    }
+
+    private String formatPagedItemListJson(ItemService.PagedResult result) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        sb.append("\"items\":[");
+        List<Item> items = result.getItems();
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append(formatItemJson(items.get(i)));
+        }
+        sb.append("],");
+        sb.append("\"page\":").append(result.getPage()).append(",");
+        sb.append("\"limit\":").append(result.getLimit()).append(",");
+        sb.append("\"total\":").append(result.getTotal()).append(",");
+        sb.append("\"totalPages\":").append(result.getTotalPages());
+        sb.append("}");
+        return sb.toString();
     }
 
     private String formatItemListJson(List<Item> items) {

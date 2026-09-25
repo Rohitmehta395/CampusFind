@@ -67,6 +67,120 @@ public class ItemDAO {
     }
 
     /**
+     * Helper holding dynamic WHERE SQL and associated parameter values.
+     */
+    private static class FilterQuery {
+        final String whereClause;
+        final List<Object> params;
+
+        FilterQuery(String whereClause, List<Object> params) {
+            this.whereClause = whereClause;
+            this.params = params;
+        }
+    }
+
+    /**
+     * Constructs a dynamic WHERE clause and parameter list based on non-blank criteria.
+     * All values use PreparedStatement placeholders, avoiding string concatenation for user inputs.
+     */
+    private FilterQuery buildFilterQuery(String q, String category, String type, String status) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+
+        if (q != null && !q.trim().isEmpty()) {
+            conditions.add("(LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))");
+            String pattern = "%" + q.trim() + "%";
+            params.add(pattern);
+            params.add(pattern);
+        }
+        if (category != null && !category.trim().isEmpty()) {
+            conditions.add("category = ?");
+            params.add(category.trim());
+        }
+        if (type != null && !type.trim().isEmpty()) {
+            conditions.add("type = ?");
+            params.add(type.trim());
+        }
+        if (status != null && !status.trim().isEmpty()) {
+            conditions.add("status = ?");
+            params.add(status.trim());
+        }
+
+        String where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
+        return new FilterQuery(where, params);
+    }
+
+    /**
+     * Searches and filters items with pagination support.
+     *
+     * @param q        optional keyword search on title and description (case-insensitive partial match)
+     * @param category optional category filter (exact match)
+     * @param type     optional item type filter (LOST or FOUND)
+     * @param status   optional item status filter (e.g. ACTIVE)
+     * @param page     1-based page number
+     * @param limit    maximum number of items to return per page
+     * @return list of matching items ordered newest-first
+     * @throws SQLException if a database access error occurs
+     */
+    public List<Item> findFiltered(String q, String category, String type, String status, int page, int limit) throws SQLException {
+        FilterQuery fq = buildFilterQuery(q, category, type, status);
+        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at FROM items"
+                + fq.whereClause + " ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?";
+
+        int offset = Math.max(0, (page - 1) * limit);
+        List<Item> items = new ArrayList<>();
+
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            int paramIndex = 1;
+            for (Object param : fq.params) {
+                stmt.setObject(paramIndex++, param);
+            }
+            stmt.setInt(paramIndex++, limit);
+            stmt.setInt(paramIndex, offset);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapRow(rs));
+                }
+            }
+        }
+        return items;
+    }
+
+    /**
+     * Counts the total number of items matching the given search and filter parameters.
+     *
+     * @param q        optional keyword search on title and description
+     * @param category optional category filter
+     * @param type     optional item type filter
+     * @param status   optional item status filter
+     * @return total matching item count
+     * @throws SQLException if a database access error occurs
+     */
+    public int countFiltered(String q, String category, String type, String status) throws SQLException {
+        FilterQuery fq = buildFilterQuery(q, category, type, status);
+        String sql = "SELECT COUNT(*) FROM items" + fq.whereClause;
+
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            int paramIndex = 1;
+            for (Object param : fq.params) {
+                stmt.setObject(paramIndex++, param);
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Retrieves all items reported by a specific user, ordered newest-first by created_at.
      *
      * @param reporterId the user's ID
