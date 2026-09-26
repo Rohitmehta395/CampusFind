@@ -3,6 +3,7 @@ package com.campusfind.services;
 import com.campusfind.dao.ItemDAO;
 import com.campusfind.exceptions.NotFoundException;
 import com.campusfind.exceptions.ValidationException;
+import com.campusfind.matching.MatchingEngine;
 import com.campusfind.models.Item;
 
 import java.sql.SQLException;
@@ -15,13 +16,19 @@ import java.util.List;
 public class ItemService {
 
     private final ItemDAO itemDAO;
+    private final MatchingEngine matchingEngine;
 
     public ItemService() {
-        this(new ItemDAO());
+        this(new ItemDAO(), new MatchingEngine());
     }
 
     public ItemService(ItemDAO itemDAO) {
+        this(itemDAO, new MatchingEngine());
+    }
+
+    public ItemService(ItemDAO itemDAO, MatchingEngine matchingEngine) {
         this.itemDAO = itemDAO;
+        this.matchingEngine = matchingEngine;
     }
 
     /**
@@ -259,6 +266,15 @@ public class ItemService {
                 null
         );
 
-        return itemDAO.insert(item);
+        Item createdItem = itemDAO.insert(item);
+
+        // Synchronously run smart matching with safety boundary
+        try {
+            matchingEngine.processNewItem(createdItem);
+        } catch (Exception e) {
+            System.err.println("[ItemService] Non-fatal error during matching for item " + createdItem.getId() + ": " + e.getMessage());
+        }
+
+        return createdItem;
     }
 }

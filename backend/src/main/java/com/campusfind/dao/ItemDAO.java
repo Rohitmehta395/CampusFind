@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -265,5 +266,49 @@ public class ItemDAO {
         }
 
         return item;
+    }
+
+    /**
+     * Finds active candidate items of the opposite type and matching category for smart matching.
+     * If eventDate is non-null, candidates are pre-filtered to within [eventDate - windowDays, eventDate + windowDays]
+     * (or candidates with null event_date, so missing date data on a candidate does not cause exclusion).
+     * If eventDate is null on the new item, the date-window condition is skipped entirely,
+     * allowing all active category-matched items to be evaluated.
+     *
+     * @param oppositeType 'FOUND' if new item is 'LOST', or 'LOST' if new item is 'FOUND'
+     * @param category exact category string
+     * @param eventDate the event date of the new item, or null if unknown
+     * @param windowDays maximum day difference for pre-filtering when eventDate is present
+     * @return list of active candidate items
+     * @throws SQLException if a database access error occurs
+     */
+    public List<Item> findCandidates(String oppositeType, String category, LocalDate eventDate, int windowDays) throws SQLException {
+        StringBuilder sql = new StringBuilder(
+                "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at " +
+                "FROM items WHERE type = ? AND category = ? AND status = 'ACTIVE'"
+        );
+
+        if (eventDate != null) {
+            sql.append(" AND (event_date BETWEEN ? AND ? OR event_date IS NULL)");
+        }
+        sql.append(" ORDER BY created_at DESC");
+
+        List<Item> candidates = new ArrayList<>();
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            stmt.setString(1, oppositeType);
+            stmt.setString(2, category);
+            if (eventDate != null) {
+                stmt.setDate(3, java.sql.Date.valueOf(eventDate.minusDays(windowDays)));
+                stmt.setDate(4, java.sql.Date.valueOf(eventDate.plusDays(windowDays)));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    candidates.add(mapRow(rs));
+                }
+            }
+        }
+        return candidates;
     }
 }
