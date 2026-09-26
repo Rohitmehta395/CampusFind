@@ -2,18 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createItemRequest } from '../api/items'
 import ImageUploader from './ImageUploader'
-
-const CATEGORY_OPTIONS = [
-  'Electronics',
-  'Bags & Backpacks',
-  'Clothing',
-  'Books & Notebooks',
-  'Keys',
-  'ID Cards & Wallets',
-  'Jewelry & Watches',
-  'Bottles & Containers',
-  'Other',
-]
+import { CATEGORY_OPTIONS } from '../constants/categories'
 
 /**
  * Shared form component for reporting either a lost or found item.

@@ -50,14 +50,16 @@ export async function createItemRequest(itemData) {
 }
 
 /**
- * Fetches all items from the public browse endpoint.
- * Unwraps the `{"items":[...]}` response shape so callers receive a plain array.
+ * Fetches items from the public browse endpoint with optional search, filter, and pagination params.
+ * Returns the full response data payload ({ items, page, limit, total, totalPages }).
+ * NOTE: Breaking change to return shape as of Phase 8B; BrowsePage is the sole consumer.
  *
- * @returns {Promise<Array<Object>>} List of all active items ordered newest-first
+ * @param {Object} [params={}] - Optional query params: { q, category, type, status, page, limit }
+ * @returns {Promise<{items: Array<Object>, page: number, limit: number, total: number, totalPages: number}>} Paged result
  */
-export async function getAllItemsRequest() {
-  const response = await axiosClient.get('/api/items')
-  return response.data?.items || []
+export async function getAllItemsRequest(params = {}) {
+  const response = await axiosClient.get('/api/items', { params })
+  return response.data
 }
 
 /**
