@@ -1,13 +1,17 @@
 package com.campusfind.services;
 
 import com.campusfind.dao.ItemDAO;
+import com.campusfind.dao.MatchDAO;
+import com.campusfind.exceptions.ForbiddenException;
 import com.campusfind.exceptions.NotFoundException;
 import com.campusfind.exceptions.ValidationException;
 import com.campusfind.matching.MatchingEngine;
 import com.campusfind.models.Item;
+import com.campusfind.models.Match;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,18 +20,24 @@ import java.util.List;
 public class ItemService {
 
     private final ItemDAO itemDAO;
+    private final MatchDAO matchDAO;
     private final MatchingEngine matchingEngine;
 
     public ItemService() {
-        this(new ItemDAO(), new MatchingEngine());
+        this(new ItemDAO(), new MatchDAO(), new MatchingEngine());
     }
 
     public ItemService(ItemDAO itemDAO) {
-        this(itemDAO, new MatchingEngine());
+        this(itemDAO, new MatchDAO(), new MatchingEngine());
     }
 
     public ItemService(ItemDAO itemDAO, MatchingEngine matchingEngine) {
+        this(itemDAO, new MatchDAO(), matchingEngine);
+    }
+
+    public ItemService(ItemDAO itemDAO, MatchDAO matchDAO, MatchingEngine matchingEngine) {
         this.itemDAO = itemDAO;
+        this.matchDAO = matchDAO;
         this.matchingEngine = matchingEngine;
     }
 
@@ -276,5 +286,57 @@ public class ItemService {
         }
 
         return createdItem;
+    }
+
+    /**
+     * View container holding a Match and the counterparty item's details.
+     */
+    public static class ItemMatchView {
+        private final Match match;
+        private final Item matchedItem;
+
+        public ItemMatchView(Match match, Item matchedItem) {
+            this.match = match;
+            this.matchedItem = matchedItem;
+        }
+
+        public Match getMatch() {
+            return match;
+        }
+
+        public Item getMatchedItem() {
+            return matchedItem;
+        }
+    }
+
+    /**
+     * Retrieves all suggested matches for a specific item, restricted to the item's reporter.
+     *
+     * @param itemId the ID of the item
+     * @param authenticatedUserId the ID of the authenticated caller
+     * @return list of ItemMatchView records ordered by score descending
+     * @throws ValidationException if itemId is null or invalid
+     * @throws NotFoundException if the item does not exist
+     * @throws ForbiddenException if the caller is not the item's reporter
+     * @throws SQLException if a database access error occurs
+     */
+    public List<ItemMatchView> getMatchesForItem(Long itemId, Long authenticatedUserId) throws SQLException {
+        if (itemId == null || itemId <= 0) {
+            throw new ValidationException("Invalid item id", "id");
+        }
+
+        Item item = getItemById(itemId);
+        if (!item.getReporterId().equals(authenticatedUserId)) {
+            throw new ForbiddenException("You are not authorized to view matches for this item");
+        }
+
+        List<Match> matches = matchDAO.findByItemId(itemId);
+        List<ItemMatchView> views = new ArrayList<>();
+        for (Match match : matches) {
+            Long otherItemId = match.getLostItemId().equals(itemId) ? match.getFoundItemId() : match.getLostItemId();
+            Item otherItem = itemDAO.findById(otherItemId).orElse(null);
+            views.add(new ItemMatchView(match, otherItem));
+        }
+        return views;
     }
 }

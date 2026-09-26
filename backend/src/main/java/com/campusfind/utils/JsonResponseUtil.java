@@ -2,6 +2,7 @@ package com.campusfind.utils;
 
 import com.campusfind.exceptions.CampusFindException;
 import com.campusfind.exceptions.ConflictException;
+import com.campusfind.exceptions.ForbiddenException;
 import com.campusfind.exceptions.NotFoundException;
 import com.campusfind.exceptions.UnauthorizedException;
 import com.campusfind.exceptions.ValidationException;
@@ -65,6 +66,8 @@ public final class JsonResponseUtil {
             return HttpServletResponse.SC_BAD_REQUEST; // 400
         } else if (ex instanceof UnauthorizedException) {
             return HttpServletResponse.SC_UNAUTHORIZED; // 401
+        } else if (ex instanceof ForbiddenException) {
+            return HttpServletResponse.SC_FORBIDDEN; // 403
         } else if (ex instanceof NotFoundException) {
             return HttpServletResponse.SC_NOT_FOUND; // 404
         } else if (ex instanceof ConflictException) {

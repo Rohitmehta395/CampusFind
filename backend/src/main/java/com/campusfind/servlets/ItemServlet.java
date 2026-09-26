@@ -2,6 +2,7 @@ package com.campusfind.servlets;
 
 import com.campusfind.exceptions.ValidationException;
 import com.campusfind.models.Item;
+import com.campusfind.models.Match;
 import com.campusfind.services.ItemService;
 import com.campusfind.utils.AuthUtil;
 import com.campusfind.utils.JsonResponseUtil;
@@ -76,6 +77,15 @@ public class ItemServlet extends BaseServlet {
                 Long reporterId = AuthUtil.requireAuthenticatedUserId(req);
                 List<Item> items = itemService.getItemsByReporter(reporterId);
                 String json = formatItemListJson(items);
+                JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
+            } else if (pathInfo.trim().matches("^/\\d+/matches/?$")) {
+                // GET /api/items/{id}/matches -> matches involving item {id}, restricted to item's reporter
+                String trimmed = pathInfo.trim();
+                String[] parts = trimmed.split("/");
+                Long itemId = Long.parseLong(parts[1]);
+                Long authenticatedUserId = AuthUtil.requireAuthenticatedUserId(req);
+                List<ItemService.ItemMatchView> matchViews = itemService.getMatchesForItem(itemId, authenticatedUserId);
+                String json = formatMatchesJson(itemId, matchViews);
                 JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
             } else {
                 // GET /api/items/{id} -> single item detail, 404 if not found
@@ -189,6 +199,62 @@ public class ItemServlet extends BaseServlet {
                 : "";
         sb.append("\"createdAt\":\"").append(JsonResponseUtil.escapeJson(createdAtStr)).append("\"");
         sb.append("}");
+        return sb.toString();
+    }
+
+    private String formatMatchesJson(Long itemId, List<ItemService.ItemMatchView> views) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        sb.append("\"itemId\":").append(itemId).append(",");
+        sb.append("\"totalMatches\":").append(views.size()).append(",");
+        sb.append("\"matches\":[");
+        for (int i = 0; i < views.size(); i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            ItemService.ItemMatchView view = views.get(i);
+            Match m = view.getMatch();
+            Item other = view.getMatchedItem();
+
+            sb.append("{");
+            sb.append("\"id\":").append(m.getId()).append(",");
+            sb.append("\"score\":").append(m.getScore()).append(",");
+            sb.append("\"status\":\"").append(JsonResponseUtil.escapeJson(m.getStatus())).append("\",");
+            String createdAtStr = (m.getCreatedAt() != null)
+                    ? m.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                    : "";
+            sb.append("\"createdAt\":\"").append(JsonResponseUtil.escapeJson(createdAtStr)).append("\",");
+
+            sb.append("\"subScores\":{");
+            sb.append("\"category\":").append(m.getCategoryScore() != null ? m.getCategoryScore().toString() : "null").append(",");
+            sb.append("\"color\":").append(m.getColorScore() != null ? m.getColorScore().toString() : "null").append(",");
+            sb.append("\"brand\":").append(m.getBrandScore() != null ? m.getBrandScore().toString() : "null").append(",");
+            sb.append("\"text\":").append(m.getTextScore() != null ? m.getTextScore().toString() : "null").append(",");
+            sb.append("\"date\":").append(m.getDateScore() != null ? m.getDateScore().toString() : "null").append(",");
+            sb.append("\"image\":").append(m.getImageScore() != null ? m.getImageScore().toString() : "null").append(",");
+            sb.append("\"location\":").append(m.getLocationScore() != null ? m.getLocationScore().toString() : "null");
+            sb.append("},");
+
+            sb.append("\"matchedItem\":");
+            if (other != null) {
+                sb.append("{");
+                sb.append("\"id\":").append(other.getId()).append(",");
+                sb.append("\"type\":\"").append(JsonResponseUtil.escapeJson(other.getType())).append("\",");
+                sb.append("\"title\":\"").append(JsonResponseUtil.escapeJson(other.getTitle())).append("\",");
+                sb.append("\"category\":\"").append(JsonResponseUtil.escapeJson(other.getCategory())).append("\",");
+                sb.append("\"color\":").append(other.getColor() != null ? "\"" + JsonResponseUtil.escapeJson(other.getColor()) + "\"" : "null").append(",");
+                sb.append("\"brand\":").append(other.getBrand() != null ? "\"" + JsonResponseUtil.escapeJson(other.getBrand()) + "\"" : "null").append(",");
+                sb.append("\"imageUrl\":").append(other.getImageUrl() != null ? "\"" + JsonResponseUtil.escapeJson(other.getImageUrl()) + "\"" : "null").append(",");
+                sb.append("\"locationText\":").append(other.getLocationText() != null ? "\"" + JsonResponseUtil.escapeJson(other.getLocationText()) + "\"" : "null").append(",");
+                sb.append("\"eventDate\":").append(other.getEventDate() != null ? "\"" + other.getEventDate().toString() + "\"" : "null");
+                sb.append("}");
+            } else {
+                sb.append("null");
+            }
+
+            sb.append("}");
+        }
+        sb.append("]}");
         return sb.toString();
     }
 }
