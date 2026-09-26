@@ -104,3 +104,6 @@ CREATE TABLE IF NOT EXISTS messages (
     CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_messages_conversation_created (conversation_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Phase 10B: Perceptual image hash storage for smart image matching
+ALTER TABLE items ADD COLUMN image_hash BIGINT NULL;

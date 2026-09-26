@@ -112,8 +112,8 @@ public class MatchingEngine {
                 );
                 Double datScore = MatchScorer.dateProximityScore(lostItem.getEventDate(), foundItem.getEventDate());
 
-                // Note: Image and Location remain out of scope in Phase 9; always null
-                Double imgScore = null;
+                // Phase 10B: Real image similarity score via ImageHasher
+                Double imgScore = ImageHasher.imageScore(lostItem.getImageHash(), foundItem.getImageHash());
                 Double locScore = null;
 
                 // Step 4: Proportional missing-data redistribution
@@ -167,7 +167,7 @@ public class MatchingEngine {
                     match.setBrandScore(toBigDecimal(brdScore));
                     match.setTextScore(toBigDecimal(txtScore));
                     match.setDateScore(toBigDecimal(datScore));
-                    match.setImageScore(null);
+                    match.setImageScore(toBigDecimal(imgScore));
                     match.setLocationScore(null);
                     match.setStatus(Match.STATUS_SUGGESTED);
 

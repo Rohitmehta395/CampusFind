@@ -28,6 +28,8 @@ public class ItemDAO {
         Timestamp ts = rs.getTimestamp("created_at");
         LocalDateTime createdAt = (ts != null) ? ts.toLocalDateTime() : null;
         java.sql.Date eventDateSql = rs.getDate("event_date");
+        long rawHash = rs.getLong("image_hash");
+        Long imageHash = rs.wasNull() ? null : rawHash;
 
         return new Item(
                 rs.getLong("id"),
@@ -39,6 +41,7 @@ public class ItemDAO {
                 rs.getString("brand"),
                 rs.getString("description"),
                 rs.getString("image_url"),
+                imageHash,
                 rs.getString("location_text"),
                 rs.getBigDecimal("latitude"),
                 rs.getBigDecimal("longitude"),
@@ -55,7 +58,7 @@ public class ItemDAO {
      * @throws SQLException if a database access error occurs
      */
     public List<Item> findAll() throws SQLException {
-        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at FROM items ORDER BY created_at DESC";
+        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, image_hash, location_text, latitude, longitude, event_date, status, created_at FROM items ORDER BY created_at DESC";
         List<Item> items = new ArrayList<>();
         try (Connection conn = DBConnectionUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -125,7 +128,7 @@ public class ItemDAO {
      */
     public List<Item> findFiltered(String q, String category, String type, String status, int page, int limit) throws SQLException {
         FilterQuery fq = buildFilterQuery(q, category, type, status);
-        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at FROM items"
+        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, image_hash, location_text, latitude, longitude, event_date, status, created_at FROM items"
                 + fq.whereClause + " ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?";
 
         int offset = Math.max(0, (page - 1) * limit);
@@ -189,7 +192,7 @@ public class ItemDAO {
      * @throws SQLException if a database access error occurs
      */
     public List<Item> findByReporterId(Long reporterId) throws SQLException {
-        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at FROM items WHERE reporter_id = ? ORDER BY created_at DESC";
+        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, image_hash, location_text, latitude, longitude, event_date, status, created_at FROM items WHERE reporter_id = ? ORDER BY created_at DESC";
         List<Item> items = new ArrayList<>();
         try (Connection conn = DBConnectionUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -211,7 +214,7 @@ public class ItemDAO {
      * @throws SQLException if a database access error occurs
      */
     public Optional<Item> findById(Long id) throws SQLException {
-        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at FROM items WHERE id = ?";
+        String sql = "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, image_hash, location_text, latitude, longitude, event_date, status, created_at FROM items WHERE id = ?";
         try (Connection conn = DBConnectionUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, id);
@@ -232,8 +235,8 @@ public class ItemDAO {
      * @throws SQLException if a database access error occurs
      */
     public Item insert(Item item) throws SQLException {
-        String sql = "INSERT INTO items (reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (reporter_id, type, title, category, color, brand, description, image_url, image_hash, location_text, latitude, longitude, event_date, status) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnectionUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -246,11 +249,16 @@ public class ItemDAO {
             stmt.setString(6, item.getBrand());
             stmt.setString(7, item.getDescription());
             stmt.setString(8, item.getImageUrl());
-            stmt.setString(9, item.getLocationText());
-            stmt.setBigDecimal(10, item.getLatitude());
-            stmt.setBigDecimal(11, item.getLongitude());
-            stmt.setDate(12, item.getEventDate() != null ? java.sql.Date.valueOf(item.getEventDate()) : null);
-            stmt.setString(13, item.getStatus() != null ? item.getStatus() : Item.STATUS_ACTIVE);
+            if (item.getImageHash() != null) {
+                stmt.setLong(9, item.getImageHash());
+            } else {
+                stmt.setNull(9, java.sql.Types.BIGINT);
+            }
+            stmt.setString(10, item.getLocationText());
+            stmt.setBigDecimal(11, item.getLatitude());
+            stmt.setBigDecimal(12, item.getLongitude());
+            stmt.setDate(13, item.getEventDate() != null ? java.sql.Date.valueOf(item.getEventDate()) : null);
+            stmt.setString(14, item.getStatus() != null ? item.getStatus() : Item.STATUS_ACTIVE);
 
             stmt.executeUpdate();
 
@@ -269,6 +277,27 @@ public class ItemDAO {
     }
 
     /**
+     * Updates the perceptual image hash for a specific item.
+     *
+     * @param itemId the ID of the item
+     * @param imageHash the 64-bit perceptual hash, or null to clear
+     * @throws SQLException if a database access error occurs
+     */
+    public void updateImageHash(Long itemId, Long imageHash) throws SQLException {
+        String sql = "UPDATE items SET image_hash = ? WHERE id = ?";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            if (imageHash != null) {
+                stmt.setLong(1, imageHash);
+            } else {
+                stmt.setNull(1, java.sql.Types.BIGINT);
+            }
+            stmt.setLong(2, itemId);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
      * Finds active candidate items of the opposite type and matching category for smart matching.
      * If eventDate is non-null, candidates are pre-filtered to within [eventDate - windowDays, eventDate + windowDays]
      * (or candidates with null event_date, so missing date data on a candidate does not cause exclusion).
@@ -284,7 +313,7 @@ public class ItemDAO {
      */
     public List<Item> findCandidates(String oppositeType, String category, LocalDate eventDate, int windowDays) throws SQLException {
         StringBuilder sql = new StringBuilder(
-                "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, location_text, latitude, longitude, event_date, status, created_at " +
+                "SELECT id, reporter_id, type, title, category, color, brand, description, image_url, image_hash, location_text, latitude, longitude, event_date, status, created_at " +
                 "FROM items WHERE type = ? AND category = ? AND status = 'ACTIVE'"
         );
 

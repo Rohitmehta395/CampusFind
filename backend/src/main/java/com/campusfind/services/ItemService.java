@@ -5,11 +5,18 @@ import com.campusfind.dao.MatchDAO;
 import com.campusfind.exceptions.ForbiddenException;
 import com.campusfind.exceptions.NotFoundException;
 import com.campusfind.exceptions.ValidationException;
+import com.campusfind.matching.ImageHasher;
 import com.campusfind.matching.MatchingEngine;
 import com.campusfind.models.Item;
 import com.campusfind.models.Match;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +25,11 @@ import java.util.List;
  * Service layer handling business logic and validation for Item entities.
  */
 public class ItemService {
+
+    private static final HttpClient IMAGE_HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
+    private static final int MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB limit
 
     private final ItemDAO itemDAO;
     private final MatchDAO matchDAO;
@@ -268,6 +280,7 @@ public class ItemService {
                 cleanBrand,
                 cleanDescription,
                 cleanImageUrl,
+                null, // imageHash initially null at insert time
                 cleanLocationText,
                 null, // latitude left null for Phase 12
                 null, // longitude left null for Phase 12
@@ -278,6 +291,21 @@ public class ItemService {
 
         Item createdItem = itemDAO.insert(item);
 
+        // Compute perceptual image hash if image URL is present, with safety boundary
+        if (cleanImageUrl != null && createdItem.getId() != null) {
+            try {
+                byte[] imageBytes = fetchImageBytes(cleanImageUrl);
+                if (imageBytes != null && imageBytes.length > 0) {
+                    long hash = ImageHasher.computeHash(imageBytes);
+                    itemDAO.updateImageHash(createdItem.getId(), hash);
+                    createdItem.setImageHash(hash);
+                }
+            } catch (Exception e) {
+                System.err.println("[ItemService] Non-fatal error during image hashing for item "
+                        + createdItem.getId() + ": " + e.getMessage());
+            }
+        }
+
         // Synchronously run smart matching with safety boundary
         try {
             matchingEngine.processNewItem(createdItem);
@@ -286,6 +314,22 @@ public class ItemService {
         }
 
         return createdItem;
+    }
+
+    private static byte[] fetchImageBytes(String imageUrl) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(imageUrl))
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+        HttpResponse<byte[]> response = IMAGE_HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        if (response.statusCode() == 200) {
+            byte[] body = response.body();
+            if (body != null && body.length <= MAX_IMAGE_BYTES) {
+                return body;
+            }
+        }
+        return null;
     }
 
     /**

@@ -26,6 +26,7 @@ public class Item {
     private String brand;
     private String description;
     private String imageUrl;
+    private Long imageHash;
     private String locationText;
     private BigDecimal latitude;
     private BigDecimal longitude;
@@ -43,7 +44,7 @@ public class Item {
      * All-arguments constructor.
      */
     public Item(Long id, Long reporterId, String type, String title, String category,
-                String color, String brand, String description, String imageUrl,
+                String color, String brand, String description, String imageUrl, Long imageHash,
                 String locationText, BigDecimal latitude, BigDecimal longitude,
                 LocalDate eventDate, String status, LocalDateTime createdAt) {
         this.id = id;
@@ -55,6 +56,7 @@ public class Item {
         this.brand = brand;
         this.description = description;
         this.imageUrl = imageUrl;
+        this.imageHash = imageHash;
         this.locationText = locationText;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -133,6 +135,14 @@ public class Item {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public Long getImageHash() {
+        return imageHash;
+    }
+
+    public void setImageHash(Long imageHash) {
+        this.imageHash = imageHash;
     }
 
     public String getLocationText() {
