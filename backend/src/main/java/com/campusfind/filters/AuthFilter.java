@@ -97,7 +97,7 @@ public class AuthFilter implements Filter {
         // Ensure CORS headers are present even on direct 401 termination
         if (httpResponse.getHeader("Access-Control-Allow-Origin") == null) {
             httpResponse.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
-            httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
             httpResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
             httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
         }
