@@ -253,5 +253,37 @@ public final class RequestBodyUtil {
             this.eventDate = eventDate;
         }
     }
+
+    /**
+     * Data Transfer Object for claim creation requests.
+     */
+    public static class CreateClaimRequest {
+        private Long itemId;
+        private String evidenceText;
+
+        public CreateClaimRequest() {
+        }
+
+        public CreateClaimRequest(Long itemId, String evidenceText) {
+            this.itemId = itemId;
+            this.evidenceText = evidenceText;
+        }
+
+        public Long getItemId() {
+            return itemId;
+        }
+
+        public void setItemId(Long itemId) {
+            this.itemId = itemId;
+        }
+
+        public String getEvidenceText() {
+            return evidenceText;
+        }
+
+        public void setEvidenceText(String evidenceText) {
+            this.evidenceText = evidenceText;
+        }
+    }
 }
 
