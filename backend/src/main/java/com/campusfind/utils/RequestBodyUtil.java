@@ -285,5 +285,27 @@ public final class RequestBodyUtil {
             this.evidenceText = evidenceText;
         }
     }
+
+    /**
+     * Data Transfer Object for claim review requests (PATCH /api/claims/{id}).
+     */
+    public static class ReviewClaimRequest {
+        private String decision;
+
+        public ReviewClaimRequest() {
+        }
+
+        public ReviewClaimRequest(String decision) {
+            this.decision = decision;
+        }
+
+        public String getDecision() {
+            return decision;
+        }
+
+        public void setDecision(String decision) {
+            this.decision = decision;
+        }
+    }
 }
 

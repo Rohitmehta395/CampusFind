@@ -127,4 +127,53 @@ public class ClaimDAO {
         }
         return list;
     }
+
+    /**
+     * Updates the status and reviewer information for a specific claim.
+     * Sets reviewed_at to CURRENT_TIMESTAMP.
+     *
+     * @param claimId    the ID of the claim to update
+     * @param status     the new claim status (e.g. APPROVED or REJECTED)
+     * @param reviewedBy the ID of the user reviewing the claim
+     * @throws SQLException if a database access error occurs
+     */
+    public void updateStatus(Long claimId, String status, Long reviewedBy) throws SQLException {
+        String sql = "UPDATE claims SET status = ?, reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, status);
+            if (reviewedBy != null) {
+                stmt.setLong(2, reviewedBy);
+            } else {
+                stmt.setNull(2, java.sql.Types.BIGINT);
+            }
+            stmt.setLong(3, claimId);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Bulk-rejects all other PENDING claims for an item, excluding the approved claim.
+     * Executed in a single atomic SQL statement rather than looping over individual records.
+     *
+     * @param itemId        the ID of the item
+     * @param exceptClaimId the ID of the claim that was approved and should not be rejected
+     * @param reviewedBy    the ID of the user performing the review
+     * @throws SQLException if a database access error occurs
+     */
+    public void rejectOtherPendingClaims(Long itemId, Long exceptClaimId, Long reviewedBy) throws SQLException {
+        String sql = "UPDATE claims SET status = 'REJECTED', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP " +
+                     "WHERE item_id = ? AND id != ? AND status = 'PENDING'";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            if (reviewedBy != null) {
+                stmt.setLong(1, reviewedBy);
+            } else {
+                stmt.setNull(1, java.sql.Types.BIGINT);
+            }
+            stmt.setLong(2, itemId);
+            stmt.setLong(3, exceptClaimId);
+            stmt.executeUpdate();
+        }
+    }
 }

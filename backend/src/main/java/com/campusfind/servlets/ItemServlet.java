@@ -1,8 +1,10 @@
 package com.campusfind.servlets;
 
 import com.campusfind.exceptions.ValidationException;
+import com.campusfind.models.Claim;
 import com.campusfind.models.Item;
 import com.campusfind.models.Match;
+import com.campusfind.services.ClaimService;
 import com.campusfind.services.ItemService;
 import com.campusfind.utils.AuthUtil;
 import com.campusfind.utils.JsonResponseUtil;
@@ -27,13 +29,19 @@ import java.util.List;
 public class ItemServlet extends BaseServlet {
 
     private final ItemService itemService;
+    private final ClaimService claimService;
 
     public ItemServlet() {
-        this(new ItemService());
+        this(new ItemService(), new ClaimService());
     }
 
     public ItemServlet(ItemService itemService) {
+        this(itemService, new ClaimService());
+    }
+
+    public ItemServlet(ItemService itemService, ClaimService claimService) {
         this.itemService = itemService;
+        this.claimService = claimService;
     }
 
     @Override
@@ -86,6 +94,15 @@ public class ItemServlet extends BaseServlet {
                 Long authenticatedUserId = AuthUtil.requireAuthenticatedUserId(req);
                 List<ItemService.ItemMatchView> matchViews = itemService.getMatchesForItem(itemId, authenticatedUserId);
                 String json = formatMatchesJson(itemId, matchViews);
+                JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
+            } else if (pathInfo.trim().matches("^/\\d+/claims/?$")) {
+                // GET /api/items/{id}/claims -> claims against item {id}, restricted to item's reporter
+                String trimmed = pathInfo.trim();
+                String[] parts = trimmed.split("/");
+                Long itemId = Long.parseLong(parts[1]);
+                Long authenticatedUserId = AuthUtil.requireAuthenticatedUserId(req);
+                List<Claim> claims = claimService.getClaimsForItem(itemId, authenticatedUserId);
+                String json = formatItemClaimsJson(itemId, claims);
                 JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
             } else {
                 // GET /api/items/{id} -> single item detail, 404 if not found
@@ -252,6 +269,37 @@ public class ItemServlet extends BaseServlet {
                 sb.append("null");
             }
 
+            sb.append("}");
+        }
+        sb.append("]}");
+        return sb.toString();
+    }
+
+    private String quote(String s) {
+        if (s == null) {
+            return "null";
+        }
+        return "\"" + JsonResponseUtil.escapeJson(s) + "\"";
+    }
+
+    private String formatItemClaimsJson(Long itemId, List<Claim> claims) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        sb.append("\"itemId\":").append(itemId).append(",");
+        sb.append("\"totalClaims\":").append(claims.size()).append(",");
+        sb.append("\"claims\":[");
+        for (int i = 0; i < claims.size(); i++) {
+            if (i > 0) sb.append(",");
+            Claim c = claims.get(i);
+            sb.append("{");
+            sb.append("\"id\":").append(c.getId()).append(",");
+            sb.append("\"itemId\":").append(c.getItemId()).append(",");
+            sb.append("\"claimantId\":").append(c.getClaimantId()).append(",");
+            sb.append("\"evidenceText\":").append(quote(c.getEvidenceText())).append(",");
+            sb.append("\"status\":").append(quote(c.getStatus())).append(",");
+            sb.append("\"reviewedBy\":").append(c.getReviewedBy() != null ? c.getReviewedBy() : "null").append(",");
+            sb.append("\"createdAt\":").append(c.getCreatedAt() != null ? quote(c.getCreatedAt().toString()) : "null").append(",");
+            sb.append("\"reviewedAt\":").append(c.getReviewedAt() != null ? quote(c.getReviewedAt().toString()) : "null");
             sb.append("}");
         }
         sb.append("]}");

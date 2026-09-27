@@ -298,6 +298,23 @@ public class ItemDAO {
     }
 
     /**
+     * Updates the status for a specific item (e.g. 'RESOLVED' or 'ACTIVE').
+     *
+     * @param itemId the ID of the item
+     * @param status the new status string
+     * @throws SQLException if a database access error occurs
+     */
+    public void updateStatus(Long itemId, String status) throws SQLException {
+        String sql = "UPDATE items SET status = ? WHERE id = ?";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, status);
+            stmt.setLong(2, itemId);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
      * Finds active candidate items of the opposite type and matching category for smart matching.
      * If eventDate is non-null, candidates are pre-filtered to within [eventDate - windowDays, eventDate + windowDays]
      * (or candidates with null event_date, so missing date data on a candidate does not cause exclusion).
