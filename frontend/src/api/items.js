@@ -45,6 +45,14 @@ export async function createItemRequest(itemData) {
     }
   }
 
+  // Include numeric coordinates only if valid numbers
+  if (typeof itemData.latitude === 'number' && !isNaN(itemData.latitude)) {
+    payload.latitude = itemData.latitude
+  }
+  if (typeof itemData.longitude === 'number' && !isNaN(itemData.longitude)) {
+    payload.longitude = itemData.longitude
+  }
+
   const response = await axiosClient.post('/api/items', payload)
   return response.data
 }

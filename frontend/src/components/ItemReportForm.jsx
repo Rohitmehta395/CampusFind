@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { createItemRequest } from '../api/items'
 import ImageUploader from './ImageUploader'
 import { CATEGORY_OPTIONS } from '../constants/categories'
+import { CAMPUS_LANDMARKS } from '../constants/landmarks'
 
 /**
  * Shared form component for reporting either a lost or found item.
@@ -26,6 +27,7 @@ export default function ItemReportForm({ type }) {
     locationText: '',
     eventDate: '',
   })
+  const [selectedLandmark, setSelectedLandmark] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [uploadError, setUploadError] = useState('')
 
@@ -52,11 +54,19 @@ export default function ItemReportForm({ type }) {
     setLoading(true)
 
     try {
-      await createItemRequest({
+      const landmarkObj = CAMPUS_LANDMARKS.find((lm) => lm.name === selectedLandmark)
+      const payload = {
         type,
         ...formData,
         imageUrl: imageUrl.trim() || undefined,
-      })
+      }
+
+      if (landmarkObj) {
+        payload.latitude = landmarkObj.latitude
+        payload.longitude = landmarkObj.longitude
+      }
+
+      await createItemRequest(payload)
 
       setSuccessMsg(
         isLost
@@ -209,6 +219,33 @@ export default function ItemReportForm({ type }) {
               }`}
             />
           </div>
+        </div>
+
+        {/* Campus Landmark (Optional) */}
+        <div>
+          <label
+            htmlFor="landmark"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
+          >
+            Campus Landmark <span className="text-slate-400 font-normal">(optional)</span>
+          </label>
+          <select
+            id="landmark"
+            name="landmark"
+            value={selectedLandmark}
+            onChange={(e) => setSelectedLandmark(e.target.value)}
+            className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
+          >
+            <option value="">Not specified</option>
+            {CAMPUS_LANDMARKS.map((lm) => (
+              <option key={lm.name} value={lm.name}>
+                {lm.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-500">
+            Choose a nearby campus landmark to enable smart location proximity matching.
+          </p>
         </div>
 
         {/* Location Text (Optional) */}
