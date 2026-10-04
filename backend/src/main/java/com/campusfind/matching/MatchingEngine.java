@@ -114,7 +114,10 @@ public class MatchingEngine {
 
                 // Phase 10B: Real image similarity score via ImageHasher
                 Double imgScore = ImageHasher.imageScore(lostItem.getImageHash(), foundItem.getImageHash());
-                Double locScore = null;
+                Double locScore = LocationScorer.locationScore(
+                        lostItem.getLatitude(), lostItem.getLongitude(),
+                        foundItem.getLatitude(), foundItem.getLongitude()
+                );
 
                 // Step 4: Proportional missing-data redistribution
                 // Formula: sum(weight_i * score_i) / sum(weight_i) over only NON-NULL scores
@@ -168,7 +171,7 @@ public class MatchingEngine {
                     match.setTextScore(toBigDecimal(txtScore));
                     match.setDateScore(toBigDecimal(datScore));
                     match.setImageScore(toBigDecimal(imgScore));
-                    match.setLocationScore(null);
+                    match.setLocationScore(toBigDecimal(locScore));
                     match.setStatus(Match.STATUS_SUGGESTED);
 
                     matchDAO.insert(match);

@@ -11,6 +11,7 @@ import com.campusfind.models.Item;
 import com.campusfind.models.Match;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -207,7 +208,7 @@ public class ItemService {
     public Item createItem(Long reporterId, String type, String title, String category,
                            String color, String brand, String description,
                            String locationText, LocalDate eventDate) throws SQLException {
-        return createItem(reporterId, type, title, category, color, brand, description, null, locationText, eventDate);
+        return createItem(reporterId, type, title, category, color, brand, description, null, locationText, null, null, eventDate);
     }
 
     /**
@@ -216,6 +217,16 @@ public class ItemService {
     public Item createItem(Long reporterId, String type, String title, String category,
                            String color, String brand, String description, String imageUrl,
                            String locationText, LocalDate eventDate) throws SQLException {
+        return createItem(reporterId, type, title, category, color, brand, description, imageUrl, locationText, null, null, eventDate);
+    }
+
+    /**
+     * Validates input and creates a new lost or found item including optional image URL and coordinates.
+     */
+    public Item createItem(Long reporterId, String type, String title, String category,
+                           String color, String brand, String description, String imageUrl,
+                           String locationText, Double latitude, Double longitude,
+                           LocalDate eventDate) throws SQLException {
         if (reporterId == null || reporterId <= 0) {
             throw new ValidationException("Invalid reporter id", "reporterId");
         }
@@ -270,6 +281,21 @@ public class ItemService {
             cleanLocationText = cleanLocationText.substring(0, 200);
         }
 
+        // Validate latitude and longitude (together-or-neither constraint and range validation)
+        if ((latitude != null && longitude == null) || (latitude == null && longitude != null)) {
+            throw new ValidationException("Latitude and longitude must both be provided together", "location");
+        }
+        if (latitude != null) {
+            if (latitude < -90.0 || latitude > 90.0) {
+                throw new ValidationException("Latitude must be between -90 and 90 degrees", "latitude");
+            }
+            if (longitude < -180.0 || longitude > 180.0) {
+                throw new ValidationException("Longitude must be between -180 and 180 degrees", "longitude");
+            }
+        }
+        BigDecimal cleanLatitude = latitude != null ? BigDecimal.valueOf(latitude) : null;
+        BigDecimal cleanLongitude = longitude != null ? BigDecimal.valueOf(longitude) : null;
+
         Item item = new Item(
                 null,
                 reporterId,
@@ -282,8 +308,8 @@ public class ItemService {
                 cleanImageUrl,
                 null, // imageHash initially null at insert time
                 cleanLocationText,
-                null, // latitude left null for Phase 12
-                null, // longitude left null for Phase 12
+                cleanLatitude,
+                cleanLongitude,
                 eventDate,
                 Item.STATUS_ACTIVE,
                 null

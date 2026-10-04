@@ -157,6 +157,8 @@ public final class RequestBodyUtil {
         private String description;
         private String imageUrl;
         private String locationText;
+        private Double latitude;
+        private Double longitude;
         private String eventDate; // ISO yyyy-MM-dd format
 
         public CreateItemRequest() {
@@ -164,12 +166,18 @@ public final class RequestBodyUtil {
 
         public CreateItemRequest(String type, String title, String category, String color,
                                  String brand, String description, String locationText, String eventDate) {
-            this(type, title, category, color, brand, description, null, locationText, eventDate);
+            this(type, title, category, color, brand, description, null, locationText, null, null, eventDate);
         }
 
         public CreateItemRequest(String type, String title, String category, String color,
                                  String brand, String description, String imageUrl,
                                  String locationText, String eventDate) {
+            this(type, title, category, color, brand, description, imageUrl, locationText, null, null, eventDate);
+        }
+
+        public CreateItemRequest(String type, String title, String category, String color,
+                                 String brand, String description, String imageUrl,
+                                 String locationText, Double latitude, Double longitude, String eventDate) {
             this.type = type;
             this.title = title;
             this.category = category;
@@ -178,6 +186,8 @@ public final class RequestBodyUtil {
             this.description = description;
             this.imageUrl = imageUrl;
             this.locationText = locationText;
+            this.latitude = latitude;
+            this.longitude = longitude;
             this.eventDate = eventDate;
         }
 
@@ -243,6 +253,22 @@ public final class RequestBodyUtil {
 
         public void setLocationText(String locationText) {
             this.locationText = locationText;
+        }
+
+        public Double getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(Double latitude) {
+            this.latitude = latitude;
+        }
+
+        public Double getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(Double longitude) {
+            this.longitude = longitude;
         }
 
         public String getEventDate() {

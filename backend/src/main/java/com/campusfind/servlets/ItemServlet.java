@@ -152,6 +152,8 @@ public class ItemServlet extends BaseServlet {
                     dto.getDescription(),
                     dto.getImageUrl(),
                     dto.getLocationText(),
+                    dto.getLatitude(),
+                    dto.getLongitude(),
                     eventDate
             );
 
