@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAllItemsRequest } from '../api/items'
 import ItemCard from '../components/ItemCard'
+import ItemsMap from '../components/ItemsMap'
 import { CATEGORY_OPTIONS } from '../constants/categories'
 
 export const PAGE_LIMIT = 12
@@ -200,6 +201,11 @@ export default function BrowsePage() {
           </div>
         </form>
       </div>
+
+      {/* Campus Map View */}
+      {!loading && !error && (
+        <ItemsMap items={items} />
+      )}
 
       {/* Loading State */}
       {loading && (
