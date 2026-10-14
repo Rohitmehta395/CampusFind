@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -45,15 +45,19 @@ export default function ItemsMap({ items = [] }) {
   const [isOpen, setIsOpen] = useState(true)
 
   // Filter items that have real, non-null numeric coordinates
-  const mappedItems = items.filter(
-    (item) =>
-      item &&
-      item.latitude !== null &&
-      item.latitude !== undefined &&
-      item.longitude !== null &&
-      item.longitude !== undefined &&
-      !isNaN(Number(item.latitude)) &&
-      !isNaN(Number(item.longitude))
+  const mappedItems = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          item &&
+          item.latitude !== null &&
+          item.latitude !== undefined &&
+          item.longitude !== null &&
+          item.longitude !== undefined &&
+          !isNaN(Number(item.latitude)) &&
+          !isNaN(Number(item.longitude))
+      ),
+    [items]
   )
 
   // Initialize Leaflet map instance once
