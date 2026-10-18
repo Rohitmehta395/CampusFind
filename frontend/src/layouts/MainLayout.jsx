@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import NotificationBell from '../components/NotificationBell'
 
 /**
  * Main layout component providing top navigation shell and child route outlet.
@@ -48,6 +49,7 @@ export default function MainLayout() {
                 <NavLink to="/my-listings" className={navLinkClasses}>
                   My Listings
                 </NavLink>
+                <NotificationBell />
                 <button
                   type="button"
                   onClick={logout}

@@ -5,10 +5,15 @@ import com.campusfind.dao.MatchDAO;
 import com.campusfind.models.Item;
 import com.campusfind.models.Match;
 
+import com.campusfind.models.Notification;
+import com.campusfind.services.NotificationService;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Orchestrator for the CampusFind Smart Matching Engine (Phase 9B).
@@ -39,14 +44,20 @@ public class MatchingEngine {
 
     private final ItemDAO itemDAO;
     private final MatchDAO matchDAO;
+    private final NotificationService notificationService;
 
     public MatchingEngine() {
-        this(new ItemDAO(), new MatchDAO());
+        this(new ItemDAO(), new MatchDAO(), new NotificationService());
     }
 
     public MatchingEngine(ItemDAO itemDAO, MatchDAO matchDAO) {
+        this(itemDAO, matchDAO, new NotificationService());
+    }
+
+    public MatchingEngine(ItemDAO itemDAO, MatchDAO matchDAO, NotificationService notificationService) {
         this.itemDAO = itemDAO;
         this.matchDAO = matchDAO;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -172,9 +183,42 @@ public class MatchingEngine {
                     match.setDateScore(toBigDecimal(datScore));
                     match.setImageScore(toBigDecimal(imgScore));
                     match.setLocationScore(toBigDecimal(locScore));
-                    match.setStatus(Match.STATUS_SUGGESTED);
+                    match = matchDAO.insert(match);
 
-                    matchDAO.insert(match);
+                    // Trigger 1: MATCH_FOUND (notify both reporters with payload ids & score)
+                    try {
+                        Long lostReporterId = lostItem.getReporterId();
+                        if (lostReporterId == null) {
+                            lostReporterId = itemDAO.findById(lostId).map(Item::getReporterId).orElse(null);
+                        }
+                        Long foundReporterId = foundItem.getReporterId();
+                        if (foundReporterId == null) {
+                            foundReporterId = itemDAO.findById(foundId).map(Item::getReporterId).orElse(null);
+                        }
+
+                        BigDecimal score = match.getScore() != null ? match.getScore() : toBigDecimal(finalScore);
+
+                        if (lostReporterId != null) {
+                            Map<String, Object> payloadLost = new LinkedHashMap<>();
+                            payloadLost.put("matchId", match.getId());
+                            payloadLost.put("itemId", lostId);
+                            payloadLost.put("matchedItemId", foundId);
+                            payloadLost.put("score", score);
+                            notificationService.notifyUser(lostReporterId, Notification.TYPE_MATCH_FOUND, payloadLost);
+                        }
+
+                        if (foundReporterId != null && !foundReporterId.equals(lostReporterId)) {
+                            Map<String, Object> payloadFound = new LinkedHashMap<>();
+                            payloadFound.put("matchId", match.getId());
+                            payloadFound.put("itemId", foundId);
+                            payloadFound.put("matchedItemId", lostId);
+                            payloadFound.put("score", score);
+                            notificationService.notifyUser(foundReporterId, Notification.TYPE_MATCH_FOUND, payloadFound);
+                        }
+                    } catch (Exception ex) {
+                        System.err.println("[MatchingEngine] Non-fatal notification error for match " 
+                                + match.getId() + ": " + ex.getMessage());
+                    }
                 }
             }
         } catch (Exception e) {

@@ -176,4 +176,30 @@ public class ClaimDAO {
             stmt.executeUpdate();
         }
     }
+
+    /**
+     * Retrieves the other pending claims for an item, excluding the specified claim.
+     * Used to identify sibling claims that will be auto-rejected upon approval.
+     *
+     * @param itemId        the ID of the item
+     * @param exceptClaimId the ID of the approved claim to exclude
+     * @return list of sibling claims currently in PENDING status
+     * @throws SQLException if a database access error occurs
+     */
+    public List<Claim> findOtherPendingClaims(Long itemId, Long exceptClaimId) throws SQLException {
+        String sql = "SELECT id, item_id, claimant_id, evidence_text, status, reviewed_by, created_at, reviewed_at " +
+                     "FROM claims WHERE item_id = ? AND id != ? AND status = 'PENDING'";
+        List<Claim> list = new ArrayList<>();
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, itemId);
+            stmt.setLong(2, exceptClaimId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+            }
+        }
+        return list;
+    }
 }

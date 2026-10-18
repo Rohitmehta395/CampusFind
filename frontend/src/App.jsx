@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { UnreadCountProvider } from './hooks/useUnreadCount'
 import MainLayout from './layouts/MainLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
@@ -10,6 +11,7 @@ import ReportLostPage from './pages/ReportLostPage'
 import ReportFoundPage from './pages/ReportFoundPage'
 import BrowsePage from './pages/BrowsePage'
 import ItemDetailPage from './pages/ItemDetailPage'
+import NotificationsPage from './pages/NotificationsPage'
 
 /**
  * Root Application component configuring authentication provider and client-side routes.
@@ -17,41 +19,51 @@ import ItemDetailPage from './pages/ItemDetailPage'
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/browse" element={<BrowsePage />} />
-            <Route path="/items/:id" element={<ItemDetailPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/my-listings"
-              element={
-                <ProtectedRoute>
-                  <MyListingsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/report-lost"
-              element={
-                <ProtectedRoute>
-                  <ReportLostPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/report-found"
-              element={
-                <ProtectedRoute>
-                  <ReportFoundPage />
-                </ProtectedRoute>
-              }
-            />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <UnreadCountProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/browse" element={<BrowsePage />} />
+              <Route path="/items/:id" element={<ItemDetailPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route
+                path="/my-listings"
+                element={
+                  <ProtectedRoute>
+                    <MyListingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/report-lost"
+                element={
+                  <ProtectedRoute>
+                    <ReportLostPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/report-found"
+                element={
+                  <ProtectedRoute>
+                    <ReportFoundPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </UnreadCountProvider>
     </AuthProvider>
   )
 }

@@ -2,14 +2,21 @@ package com.campusfind.services;
 
 import com.campusfind.dao.ClaimDAO;
 import com.campusfind.dao.ItemDAO;
+import com.campusfind.dao.MatchDAO;
 import com.campusfind.exceptions.ForbiddenException;
 import com.campusfind.exceptions.NotFoundException;
 import com.campusfind.exceptions.ValidationException;
 import com.campusfind.models.Claim;
 import com.campusfind.models.Item;
+import com.campusfind.models.Match;
+import com.campusfind.models.Notification;
 
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Service layer handling business logic and validation for ownership claims on items.
@@ -21,19 +28,31 @@ public class ClaimService {
     private final ClaimDAO claimDAO;
     private final ItemService itemService;
     private final ItemDAO itemDAO;
+    private final MatchDAO matchDAO;
+    private final NotificationService notificationService;
 
     public ClaimService() {
-        this(new ClaimDAO(), new ItemService(), new ItemDAO());
+        this(new ClaimDAO(), new ItemService(), new ItemDAO(), new MatchDAO(), new NotificationService());
     }
 
     public ClaimService(ClaimDAO claimDAO, ItemService itemService) {
-        this(claimDAO, itemService, new ItemDAO());
+        this(claimDAO, itemService, new ItemDAO(), new MatchDAO(), new NotificationService());
     }
 
     public ClaimService(ClaimDAO claimDAO, ItemService itemService, ItemDAO itemDAO) {
+        this(claimDAO, itemService, itemDAO, new MatchDAO(), new NotificationService());
+    }
+
+    public ClaimService(ClaimDAO claimDAO, ItemService itemService, ItemDAO itemDAO, NotificationService notificationService) {
+        this(claimDAO, itemService, itemDAO, new MatchDAO(), notificationService);
+    }
+
+    public ClaimService(ClaimDAO claimDAO, ItemService itemService, ItemDAO itemDAO, MatchDAO matchDAO, NotificationService notificationService) {
         this.claimDAO = claimDAO;
         this.itemService = itemService;
         this.itemDAO = itemDAO;
+        this.matchDAO = matchDAO;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -87,7 +106,23 @@ public class ClaimService {
         claim.setReviewedBy(null);
         claim.setReviewedAt(null);
 
-        return claimDAO.insert(claim);
+        Claim persisted = claimDAO.insert(claim);
+
+        // Trigger 2: CLAIM_SUBMITTED (notify item's reporter)
+        try {
+            Long reporterId = item.getReporterId();
+            if (reporterId != null && !reporterId.equals(claimantId)) {
+                Map<String, Object> payload = new LinkedHashMap<>();
+                payload.put("claimId", persisted.getId());
+                payload.put("itemId", itemId);
+                notificationService.notifyUser(reporterId, Notification.TYPE_CLAIM_SUBMITTED, payload);
+            }
+        } catch (Exception ex) {
+            System.err.println("[ClaimService] Non-fatal notification error for submitted claim " 
+                    + persisted.getId() + ": " + ex.getMessage());
+        }
+
+        return persisted;
     }
 
     /**
@@ -161,11 +196,75 @@ public class ClaimService {
 
         // 5. Execute review action
         if (approve) {
+            List<Claim> siblingsToReject = claimDAO.findOtherPendingClaims(item.getId(), claimId);
+
             claimDAO.updateStatus(claimId, Claim.STATUS_APPROVED, reviewerId);
             claimDAO.rejectOtherPendingClaims(item.getId(), claimId, reviewerId);
             itemDAO.updateStatus(item.getId(), Item.STATUS_RESOLVED);
+
+            // Trigger 3: CLAIM_APPROVED & CLAIM_REJECTED (siblings), and Trigger 4: ITEM_RESOLVED
+            try {
+                // 3a. Notify approved claimant
+                if (claim.getClaimantId() != null && !claim.getClaimantId().equals(reviewerId)) {
+                    Map<String, Object> payloadApproved = new LinkedHashMap<>();
+                    payloadApproved.put("claimId", claimId);
+                    payloadApproved.put("itemId", item.getId());
+                    notificationService.notifyUser(claim.getClaimantId(), Notification.TYPE_CLAIM_APPROVED, payloadApproved);
+                }
+
+                // 3b. Notify auto-rejected siblings
+                if (siblingsToReject != null) {
+                    for (Claim sibling : siblingsToReject) {
+                        if (sibling.getClaimantId() != null && !sibling.getClaimantId().equals(reviewerId)) {
+                            Map<String, Object> payloadSibling = new LinkedHashMap<>();
+                            payloadSibling.put("claimId", sibling.getId());
+                            payloadSibling.put("itemId", item.getId());
+                            notificationService.notifyUser(sibling.getClaimantId(), Notification.TYPE_CLAIM_REJECTED, payloadSibling);
+                        }
+                    }
+                }
+
+                // 4. Trigger ITEM_RESOLVED: notify counterpart items' reporters
+                List<Match> matches = matchDAO.findByItemId(item.getId());
+                if (matches != null && !matches.isEmpty()) {
+                    Set<Long> notifiedReporters = new HashSet<>();
+                    for (Match m : matches) {
+                        Long counterpartItemId = m.getLostItemId().equals(item.getId()) 
+                                ? m.getFoundItemId() 
+                                : m.getLostItemId();
+                        if (counterpartItemId != null) {
+                            itemDAO.findById(counterpartItemId).ifPresent(cpItem -> {
+                                Long cpReporterId = cpItem.getReporterId();
+                                // Exclude reviewer (actor) and avoid duplicates
+                                if (cpReporterId != null && !cpReporterId.equals(reviewerId) && notifiedReporters.add(cpReporterId)) {
+                                    Map<String, Object> payloadResolved = new LinkedHashMap<>();
+                                    payloadResolved.put("itemId", counterpartItemId);
+                                    payloadResolved.put("resolvedItemId", item.getId());
+                                    notificationService.notifyUser(cpReporterId, Notification.TYPE_ITEM_RESOLVED, payloadResolved);
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                System.err.println("[ClaimService] Non-fatal notification error during claim approval " 
+                        + claimId + ": " + ex.getMessage());
+            }
         } else {
             claimDAO.updateStatus(claimId, Claim.STATUS_REJECTED, reviewerId);
+
+            // Trigger 3: CLAIM_REJECTED
+            try {
+                if (claim.getClaimantId() != null && !claim.getClaimantId().equals(reviewerId)) {
+                    Map<String, Object> payloadRejected = new LinkedHashMap<>();
+                    payloadRejected.put("claimId", claimId);
+                    payloadRejected.put("itemId", item.getId());
+                    notificationService.notifyUser(claim.getClaimantId(), Notification.TYPE_CLAIM_REJECTED, payloadRejected);
+                }
+            } catch (Exception ex) {
+                System.err.println("[ClaimService] Non-fatal notification error during claim rejection " 
+                        + claimId + ": " + ex.getMessage());
+            }
         }
 
         // 6. Return refreshed claim
