@@ -19,7 +19,16 @@ const POLL_INTERVAL_MS = 30000 // 30 seconds
 export function UnreadCountProvider({ children }) {
   const { user } = useAuth()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [prevUser, setPrevUser] = useState(user)
   const inFlightRef = useRef(false)
+
+  // Reset count immediately during render when user logs out
+  if (user !== prevUser) {
+    setPrevUser(user)
+    if (!user) {
+      setUnreadCount(0)
+    }
+  }
 
   const fetchCount = useCallback(async () => {
     if (!user) return
@@ -45,7 +54,6 @@ export function UnreadCountProvider({ children }) {
 
   useEffect(() => {
     if (!user) {
-      setUnreadCount(0)
       return
     }
 
@@ -101,5 +109,3 @@ export function useUnreadCount() {
   }
   return context
 }
-
-export default useUnreadCount

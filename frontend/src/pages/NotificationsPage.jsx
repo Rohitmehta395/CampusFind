@@ -48,31 +48,53 @@ export default function NotificationsPage() {
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [markingAll, setMarkingAll] = useState(false)
+  const [refetchTrigger, setRefetchTrigger] = useState(0)
 
-  const fetchNotifications = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await getNotificationsRequest({
-        unreadOnly,
-        page,
-        limit: NOTIFICATIONS_PER_PAGE,
-      })
-      setNotifications(data.notifications || [])
-      setTotal(data.total || 0)
-      setTotalPages(data.totalPages || 1)
-    } catch (err) {
-      setError(
-        err.response?.data?.error || err.message || 'Failed to load notifications'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }, [unreadOnly, page])
+  const triggerRefetch = useCallback(() => {
+    setRefetchTrigger((t) => t + 1)
+  }, [])
 
   useEffect(() => {
-    fetchNotifications()
-  }, [fetchNotifications])
+    let ignore = false
+    setError('')
+
+    getNotificationsRequest({
+      unreadOnly,
+      page,
+      limit: NOTIFICATIONS_PER_PAGE,
+    })
+      .then((data) => {
+        if (ignore) return
+        const items = data.notifications || []
+        const totalCount = data.total || 0
+        const totalPageCount = data.totalPages || 1
+
+        // Clamp back if page exceeds available pages (e.g. marking the last unread item on page 2 read)
+        if (totalCount > 0 && items.length === 0 && page > totalPageCount) {
+          setPage(totalPageCount)
+          return
+        }
+
+        setNotifications(items)
+        setTotal(totalCount)
+        setTotalPages(totalPageCount)
+      })
+      .catch((err) => {
+        if (ignore) return
+        setError(
+          err.response?.data?.error || err.message || 'Failed to load notifications'
+        )
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [unreadOnly, page, refetchTrigger])
 
   // Handle Mark All As Read
   const handleMarkAllRead = async () => {
@@ -86,9 +108,10 @@ export default function NotificationsPage() {
       )
       // Immediately refresh top nav badge
       await refreshUnreadBadge()
-      // If filtering by unread-only, re-fetch list to show empty state
+      // If filtering by unread-only, reset to page 1 and refetch to show clean empty state
       if (unreadOnly) {
-        fetchNotifications()
+        setPage(1)
+        triggerRefetch()
       }
     } catch (err) {
       setError(
@@ -127,14 +150,21 @@ export default function NotificationsPage() {
     e.stopPropagation()
     try {
       await markNotificationReadRequest(notificationId)
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notificationId ? { ...n, isRead: true } : n
-        )
-      )
       await refreshUnreadBadge()
+
       if (unreadOnly) {
-        fetchNotifications()
+        // If this was the only unread item on current page and we are beyond page 1, step back
+        if (notifications.length === 1 && page > 1) {
+          setPage((p) => Math.max(1, p - 1))
+        } else {
+          triggerRefetch()
+        }
+      } else {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notificationId ? { ...n, isRead: true } : n
+          )
+        )
       }
     } catch {
       // Ignore or silently fail
@@ -200,7 +230,7 @@ export default function NotificationsPage() {
           <button
             id="notifications-retry-btn"
             type="button"
-            onClick={fetchNotifications}
+            onClick={triggerRefetch}
             className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             Retry
