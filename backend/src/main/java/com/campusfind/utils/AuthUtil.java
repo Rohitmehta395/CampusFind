@@ -1,8 +1,14 @@
 package com.campusfind.utils;
 
+import com.campusfind.dao.UserDAO;
+import com.campusfind.exceptions.ForbiddenException;
 import com.campusfind.exceptions.UnauthorizedException;
+import com.campusfind.models.User;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.sql.SQLException;
+import java.util.Optional;
 
 /**
  * Utility for extracting and verifying authenticated user credentials
@@ -95,4 +101,55 @@ public final class AuthUtil {
         }
         return role;
     }
+
+    /**
+     * Authenticates the request token, loads the User entity directly from the database,
+     * and rejects suspended accounts with HTTP 403 Forbidden.
+     * Reusable foundation for 14B authenticated requests.
+     *
+     * @param request the HTTP servlet request
+     * @return the active User record from the database
+     * @throws UnauthorizedException if token is missing/invalid or user record no longer exists
+     * @throws ForbiddenException if the user account is suspended
+     */
+    public static User requireActiveUser(HttpServletRequest request) {
+        Long userId = requireAuthenticatedUserId(request);
+        UserDAO userDAO = new UserDAO();
+        Optional<User> userOpt;
+        try {
+            userOpt = userDAO.findById(userId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error verifying user: " + e.getMessage(), e);
+        }
+
+        if (userOpt.isEmpty()) {
+            throw new UnauthorizedException("User no longer exists");
+        }
+
+        User user = userOpt.get();
+        if (user.isSuspended()) {
+            throw new ForbiddenException("Account is suspended");
+        }
+
+        return user;
+    }
+
+    /**
+     * Enforces database-backed admin authorization.
+     * Validates the token, verifies the user exists and is not suspended in the database,
+     * and verifies that the database role is ADMIN (ignoring any token role claim).
+     *
+     * @param request the HTTP servlet request
+     * @return the admin's userId
+     * @throws UnauthorizedException if token is missing/invalid or user does not exist
+     * @throws ForbiddenException if account is suspended or role is not ADMIN
+     */
+    public static Long requireAdmin(HttpServletRequest request) {
+        User user = requireActiveUser(request);
+        if (!User.ROLE_ADMIN.equals(user.getRole())) {
+            throw new ForbiddenException("Admin access required");
+        }
+        return user.getId();
+    }
 }
+

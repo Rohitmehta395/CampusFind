@@ -2,6 +2,7 @@ package com.campusfind.servlets;
 
 import com.campusfind.models.User;
 import com.campusfind.services.UserService;
+import com.campusfind.utils.AuthUtil;
 import com.campusfind.utils.JsonResponseUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -38,6 +39,7 @@ public class UserListServlet extends BaseServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         handle(request, response, (req, res) -> {
+            AuthUtil.requireAdmin(req);
             List<User> users = userService.getAllUsers();
             StringBuilder sb = new StringBuilder();
             sb.append("{\"users\":[");
