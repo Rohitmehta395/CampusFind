@@ -56,7 +56,7 @@ public class NotificationServlet extends BaseServlet {
             throws ServletException, IOException {
         handle(request, response, (req, res) -> {
             // All endpoints authenticated via AuthUtil
-            Long userId = AuthUtil.requireAuthenticatedUserId(req);
+            Long userId = AuthUtil.requireActiveUser(req).getId();
 
             String pathInfo = req.getPathInfo();
 
@@ -100,7 +100,7 @@ public class NotificationServlet extends BaseServlet {
             throws ServletException, IOException {
         handle(request, response, (req, res) -> {
             // All endpoints authenticated via AuthUtil
-            Long userId = AuthUtil.requireAuthenticatedUserId(req);
+            Long userId = AuthUtil.requireActiveUser(req).getId();
 
             String pathInfo = req.getPathInfo();
             if (pathInfo == null || pathInfo.trim().isEmpty() || pathInfo.trim().equals("/")) {

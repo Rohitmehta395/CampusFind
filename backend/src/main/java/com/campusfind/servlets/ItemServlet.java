@@ -51,6 +51,12 @@ public class ItemServlet extends BaseServlet {
             String pathInfo = req.getPathInfo();
 
             if (pathInfo == null || pathInfo.equals("/") || pathInfo.isEmpty()) {
+                // If caller supplies an Authorization token, verify account is not suspended
+                String authHeader = req.getHeader("Authorization");
+                if (authHeader != null && !authHeader.trim().isEmpty()) {
+                    AuthUtil.requireActiveUser(req);
+                }
+
                 // GET /api/items -> public list of items with search, filter, and pagination
                 String q = req.getParameter("q");
                 String category = req.getParameter("category");
@@ -82,7 +88,7 @@ public class ItemServlet extends BaseServlet {
                 JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
             } else if ("/mine".equalsIgnoreCase(pathInfo.trim())) {
                 // GET /api/items/mine -> authenticated caller's own reported items
-                Long reporterId = AuthUtil.requireAuthenticatedUserId(req);
+                Long reporterId = AuthUtil.requireActiveUser(req).getId();
                 List<Item> items = itemService.getItemsByReporter(reporterId);
                 String json = formatItemListJson(items);
                 JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
@@ -91,7 +97,7 @@ public class ItemServlet extends BaseServlet {
                 String trimmed = pathInfo.trim();
                 String[] parts = trimmed.split("/");
                 Long itemId = Long.parseLong(parts[1]);
-                Long authenticatedUserId = AuthUtil.requireAuthenticatedUserId(req);
+                Long authenticatedUserId = AuthUtil.requireActiveUser(req).getId();
                 List<ItemService.ItemMatchView> matchViews = itemService.getMatchesForItem(itemId, authenticatedUserId);
                 String json = formatMatchesJson(itemId, matchViews);
                 JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
@@ -100,11 +106,17 @@ public class ItemServlet extends BaseServlet {
                 String trimmed = pathInfo.trim();
                 String[] parts = trimmed.split("/");
                 Long itemId = Long.parseLong(parts[1]);
-                Long authenticatedUserId = AuthUtil.requireAuthenticatedUserId(req);
+                Long authenticatedUserId = AuthUtil.requireActiveUser(req).getId();
                 List<Claim> claims = claimService.getClaimsForItem(itemId, authenticatedUserId);
                 String json = formatItemClaimsJson(itemId, claims);
                 JsonResponseUtil.writeSuccess(res, HttpServletResponse.SC_OK, json);
             } else {
+                // If caller supplies an Authorization token, verify account is not suspended
+                String authHeader = req.getHeader("Authorization");
+                if (authHeader != null && !authHeader.trim().isEmpty()) {
+                    AuthUtil.requireActiveUser(req);
+                }
+
                 // GET /api/items/{id} -> single item detail, 404 if not found
                 String idStr = pathInfo.startsWith("/") ? pathInfo.substring(1).trim() : pathInfo.trim();
                 Long itemId;
@@ -125,8 +137,8 @@ public class ItemServlet extends BaseServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         handle(request, response, (req, res) -> {
-            // 1. Enforce authentication first via AuthUtil (throws UnauthorizedException on failure)
-            Long reporterId = AuthUtil.requireAuthenticatedUserId(req);
+            // 1. Enforce authentication first via AuthUtil (throws UnauthorizedException on failure, ForbiddenException if suspended)
+            Long reporterId = AuthUtil.requireActiveUser(req).getId();
 
             // 2. Parse request body into CreateItemRequest DTO
             RequestBodyUtil.CreateItemRequest dto = RequestBodyUtil.parse(req, RequestBodyUtil.CreateItemRequest.class);

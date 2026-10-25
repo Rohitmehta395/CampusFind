@@ -174,7 +174,15 @@ public class AdminDAO {
         sql.append("ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?");
 
         List<User> list = new ArrayList<>();
-        int offset = (page - 1) * limit;
+        long offsetLong = ((long) page - 1) * (long) limit;
+        if (offsetLong < 0) {
+            offsetLong = 0;
+        }
+        long maxOffset = 100_000_000L;
+        if (offsetLong > maxOffset) {
+            offsetLong = maxOffset;
+        }
+        int offset = (int) offsetLong;
 
         try (Connection conn = DBConnectionUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
@@ -235,5 +243,63 @@ public class AdminDAO {
             }
         }
         return 0;
+    }
+
+    /**
+     * Updates the suspension status of a user.
+     *
+     * @param userId      the primary key ID of the user
+     * @param isSuspended true to suspend, false to unsuspend
+     * @throws SQLException if a database access error occurs
+     */
+    public void updateUserSuspended(Long userId, boolean isSuspended) throws SQLException {
+        String sql = "UPDATE users SET is_suspended = ? WHERE id = ?";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, isSuspended ? 1 : 0);
+            stmt.setLong(2, userId);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Counts the number of active, non-suspended users with the ADMIN role.
+     * Used for the "last admin" safeguard.
+     *
+     * @return number of active admins
+     * @throws SQLException if a database access error occurs
+     */
+    public int countActiveAdmins() throws SQLException {
+        String sql = "SELECT COUNT(*) AS total FROM users WHERE role = 'ADMIN' AND is_suspended = 0";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Checks if an item has any claim that was APPROVED.
+     * Used to verify whether a REMOVED item was previously in a RESOLVED state.
+     *
+     * @param itemId the primary key ID of the item
+     * @return true if an approved claim exists for this item
+     * @throws SQLException if a database access error occurs
+     */
+    public boolean hasApprovedClaim(Long itemId) throws SQLException {
+        String sql = "SELECT COUNT(*) AS total FROM claims WHERE item_id = ? AND status = 'APPROVED'";
+        try (Connection conn = DBConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, itemId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("total") > 0;
+                }
+            }
+        }
+        return false;
     }
 }

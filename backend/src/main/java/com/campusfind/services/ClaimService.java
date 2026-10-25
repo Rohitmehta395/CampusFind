@@ -3,6 +3,7 @@ package com.campusfind.services;
 import com.campusfind.dao.ClaimDAO;
 import com.campusfind.dao.ItemDAO;
 import com.campusfind.dao.MatchDAO;
+import com.campusfind.exceptions.ConflictException;
 import com.campusfind.exceptions.ForbiddenException;
 import com.campusfind.exceptions.NotFoundException;
 import com.campusfind.exceptions.ValidationException;
@@ -170,6 +171,28 @@ public class ClaimService {
      * @throws SQLException        if a database access error occurs
      */
     public Claim reviewClaim(Long claimId, Long reviewerId, boolean approve) throws SQLException {
+        return reviewClaimInternal(claimId, reviewerId, approve, false);
+    }
+
+    /**
+     * Admin override for claim decisions. Bypasses the owner-only check and enforces
+     * terminal state rules (idempotent re-application allowed; flipping between APPROVED
+     * and REJECTED triggers 409 Conflict).
+     *
+     * @param claimId the ID of the claim being reviewed
+     * @param adminId the ID of the admin performing the override
+     * @param approve true to approve, false to reject
+     * @return the updated Claim entity
+     * @throws ValidationException if input is invalid
+     * @throws NotFoundException   if the claim or item does not exist
+     * @throws ConflictException   if attempting to flip an already-decided claim to opposite decision
+     * @throws SQLException        if a database access error occurs
+     */
+    public Claim reviewClaimAsAdmin(Long claimId, Long adminId, boolean approve) throws SQLException {
+        return reviewClaimInternal(claimId, adminId, approve, true);
+    }
+
+    private Claim reviewClaimInternal(Long claimId, Long reviewerId, boolean approve, boolean isAdminOverride) throws SQLException {
         if (claimId == null || claimId <= 0) {
             throw new ValidationException("Invalid claim id", "id");
         }
@@ -184,14 +207,28 @@ public class ClaimService {
         // 2. Fetch underlying item
         Item item = itemService.getItemById(claim.getItemId());
 
-        // 3. Verify reviewer is the item's reporter
-        if (!reviewerId.equals(item.getReporterId())) {
-            throw new ForbiddenException("You are not authorized to review claims for this item");
-        }
+        if (!isAdminOverride) {
+            // 3. Verify reviewer is the item's reporter
+            if (!reviewerId.equals(item.getReporterId())) {
+                throw new ForbiddenException("You are not authorized to review claims for this item");
+            }
 
-        // 4. Verify claim status is PENDING (no re-reviewing allowed)
-        if (!Claim.STATUS_PENDING.equalsIgnoreCase(claim.getStatus())) {
-            throw new ValidationException("This claim has already been reviewed", "status");
+            // 4. Verify claim status is PENDING (no re-reviewing allowed)
+            if (!Claim.STATUS_PENDING.equalsIgnoreCase(claim.getStatus())) {
+                throw new ValidationException("This claim has already been reviewed", "status");
+            }
+        } else {
+            // Admin override terminal state enforcement
+            String targetStatus = approve ? Claim.STATUS_APPROVED : Claim.STATUS_REJECTED;
+            if (!Claim.STATUS_PENDING.equalsIgnoreCase(claim.getStatus())) {
+                if (targetStatus.equalsIgnoreCase(claim.getStatus())) {
+                    // Idempotent re-application of the same decision
+                    return claim;
+                } else {
+                    // Flipping already-APPROVED claim to REJECTED or vice-versa
+                    throw new ConflictException("Cannot change decision on an already " + claim.getStatus().toLowerCase() + " claim");
+                }
+            }
         }
 
         // 5. Execute review action

@@ -51,7 +51,7 @@ public class ClaimServlet extends BaseServlet {
             }
 
             // 1. Enforce authentication; claimantId is strictly obtained from verified JWT
-            Long claimantId = AuthUtil.requireAuthenticatedUserId(req);
+            Long claimantId = AuthUtil.requireActiveUser(req).getId();
 
             // 2. Parse request payload into CreateClaimRequest DTO
             RequestBodyUtil.CreateClaimRequest dto = RequestBodyUtil.parse(req, RequestBodyUtil.CreateClaimRequest.class);
@@ -69,7 +69,7 @@ public class ClaimServlet extends BaseServlet {
             throws ServletException, IOException {
         handle(request, response, (req, res) -> {
             // 1. Enforce authentication; reviewerId is strictly from verified JWT
-            Long reviewerId = AuthUtil.requireAuthenticatedUserId(req);
+            Long reviewerId = AuthUtil.requireActiveUser(req).getId();
 
             // 2. Parse claim ID from pathInfo ("/1" -> 1)
             String pathInfo = req.getPathInfo();
