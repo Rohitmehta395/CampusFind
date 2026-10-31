@@ -97,6 +97,9 @@ public class ClaimService {
         if (cleanEvidence.length() < MIN_EVIDENCE_LENGTH) {
             throw new ValidationException("Evidence text must be at least " + MIN_EVIDENCE_LENGTH + " characters", "evidenceText");
         }
+        if (cleanEvidence.length() > 2000) {
+            throw new ValidationException("Evidence text must not exceed 2000 characters", "evidenceText");
+        }
 
         // 6. Assemble and persist Claim entity
         Claim claim = new Claim();

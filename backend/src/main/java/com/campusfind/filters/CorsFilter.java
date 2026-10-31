@@ -13,14 +13,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * CORS filter for local development.
- * Allows requests originating from the Vite development server (http://localhost:5173)
- * across all /api/* endpoints and handles HTTP OPTIONS preflight requests.
+ * CORS and baseline security headers filter.
+ * - Manages configurable Allowed Origins via ALLOWED_ORIGIN env var (defaults to http://localhost:5173).
+ * - Handles HTTP OPTIONS preflight requests.
+ * - Sets standard baseline security headers across all API responses (success and error alike):
+ *   X-Content-Type-Options: nosniff
+ *   X-Frame-Options: DENY
+ *   Referrer-Policy: strict-origin-when-cross-origin
  */
 @WebFilter("/api/*")
 public class CorsFilter implements Filter {
 
-    private static final String DEFAULT_ORIGIN = "http://localhost:5173";
+    public static final String DEFAULT_ORIGIN = "http://localhost:5173";
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -37,27 +41,40 @@ public class CorsFilter implements Filter {
                 envOrigin = System.getenv("FRONTEND_URL");
             }
 
-            String allowedOrigin = DEFAULT_ORIGIN;
-            if (envOrigin != null && !envOrigin.isBlank()) {
-                java.util.Set<String> allowedSet = new java.util.HashSet<>(java.util.Arrays.asList(envOrigin.split("\\s*,\\s*")));
-                allowedSet.add(DEFAULT_ORIGIN);
+            String configuredOrigin = (envOrigin != null && !envOrigin.isBlank())
+                    ? envOrigin.trim()
+                    : DEFAULT_ORIGIN;
 
-                if (originHeader != null && (allowedSet.contains(originHeader) || allowedSet.contains("*"))) {
-                    allowedOrigin = originHeader;
-                } else if (originHeader != null && envOrigin.trim().equals("*")) {
-                    allowedOrigin = originHeader;
-                } else {
-                    allowedOrigin = envOrigin.trim();
+            String responseOrigin = null;
+
+            if ("*".equals(configuredOrigin)) {
+                // If explicitly configured as wildcard
+                responseOrigin = (originHeader != null) ? originHeader : "*";
+            } else {
+                // Support comma-separated list of allowed origins
+                String[] origins = configuredOrigin.split("\\s*,\\s*");
+                if (originHeader != null) {
+                    for (String o : origins) {
+                        if (o.equalsIgnoreCase(originHeader.trim())) {
+                            responseOrigin = originHeader;
+                            break;
+                        }
+                    }
                 }
-            } else if (originHeader != null) {
-                allowedOrigin = originHeader;
             }
 
-            httpResponse.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-            httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-            httpResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-            httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
-            httpResponse.setHeader("Vary", "Origin");
+            if (responseOrigin != null) {
+                httpResponse.setHeader("Access-Control-Allow-Origin", responseOrigin);
+                httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+                httpResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+                httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
+                httpResponse.setHeader("Vary", "Origin");
+            }
+
+            // D5: Baseline Security Headers applied to every response
+            httpResponse.setHeader("X-Content-Type-Options", "nosniff");
+            httpResponse.setHeader("X-Frame-Options", "DENY");
+            httpResponse.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
             if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
                 httpResponse.setStatus(HttpServletResponse.SC_OK);

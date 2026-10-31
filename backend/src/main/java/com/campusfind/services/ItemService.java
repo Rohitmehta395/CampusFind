@@ -266,6 +266,9 @@ public class ItemService {
         }
 
         String cleanDescription = (description != null && !description.trim().isEmpty()) ? description.trim() : null;
+        if (cleanDescription != null && cleanDescription.length() > 2000) {
+            throw new ValidationException("Description must not exceed 2000 characters", "description");
+        }
 
         // Validate and clean imageUrl (VARCHAR(500) limit, non-silent rejection on overflow)
         String cleanImageUrl = null;
