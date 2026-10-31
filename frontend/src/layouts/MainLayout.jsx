@@ -18,6 +18,7 @@ export default function MainLayout() {
   const [reportDropdownOpen, setReportDropdownOpen] = useState(false)
   const [backendOnline, setBackendOnline] = useState(false)
   const location = useLocation()
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
 
   // Close menus on route change
   useEffect(() => {
@@ -291,99 +292,105 @@ export default function MainLayout() {
       </main>
 
       {/* ── Geniestudio Daylight Footer ── */}
-      <footer style={{ background: '#fafdff', borderTop: '1px solid #e8f1f8' }} className="mt-auto">
-        {/* Charcoal CTA Band */}
-        <div className="py-14 sm:py-20 px-5 sm:px-8" style={{ background: '#181d27' }}>
-          <div className="max-w-[1200px] mx-auto text-center space-y-5">
-            <span
-              className="inline-block text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
-              style={{ background: '#0069e0', color: '#ffffff', letterSpacing: '0.08em' }}
-            >
-              Rapid Campus Recovery
-            </span>
-            <h2
-              className="text-2xl sm:text-4xl font-medium tracking-tight"
-              style={{ color: '#fafdff', letterSpacing: '-0.02em' }}
-            >
-              Lost something on campus today?
-            </h2>
-            <p className="text-sm max-w-lg mx-auto leading-relaxed" style={{ color: '#93979f' }}>
-              Report it in less than 60 seconds. Our landmark algorithm alerts students who find matching items nearby.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3 pt-3">
-              <Link
-                to="/browse"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-opacity hover:opacity-85 shadow-md"
-                style={{ background: '#fafdff', color: '#0a0d12' }}
+      {isAuthPage ? (
+        <footer className="py-6 text-center text-xs" style={{ color: '#93979f' }}>
+          <p>© {new Date().getFullYear()} CampusFind. Built for University Campus Communities.</p>
+        </footer>
+      ) : (
+        <footer style={{ background: '#fafdff', borderTop: '1px solid #e8f1f8' }} className="mt-auto">
+          {/* Charcoal CTA Band */}
+          <div className="py-14 sm:py-20 px-5 sm:px-8" style={{ background: '#181d27' }}>
+            <div className="max-w-[1200px] mx-auto text-center space-y-5">
+              <span
+                className="inline-block text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
+                style={{ background: '#0069e0', color: '#ffffff', letterSpacing: '0.08em' }}
               >
-                Browse All Items
-              </Link>
-              <Link
-                to="/report-lost"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium border transition-opacity hover:opacity-75"
-                style={{ borderColor: '#3b3d41', color: '#fafdff' }}
+                Rapid Campus Recovery
+              </span>
+              <h2
+                className="text-2xl sm:text-4xl font-medium tracking-tight"
+                style={{ color: '#fafdff', letterSpacing: '-0.02em' }}
               >
-                Report Lost Item
-              </Link>
+                Lost something on campus today?
+              </h2>
+              <p className="text-sm max-w-lg mx-auto leading-relaxed" style={{ color: '#93979f' }}>
+                Report it in less than 60 seconds. Our landmark algorithm alerts students who find matching items nearby.
+              </p>
+              <div className="flex flex-wrap justify-center gap-3 pt-3">
+                <Link
+                  to="/browse"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-opacity hover:opacity-85 shadow-md"
+                  style={{ background: '#fafdff', color: '#0a0d12' }}
+                >
+                  Browse All Items
+                </Link>
+                <Link
+                  to="/report-lost"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium border transition-opacity hover:opacity-75"
+                  style={{ borderColor: '#3b3d41', color: '#fafdff' }}
+                >
+                  Report Lost Item
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Link Grid */}
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div className="space-y-3 sm:col-span-2">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: '#181d27' }}>
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="7.5" stroke="#fafdff" strokeWidth="1.5" />
-                    <path d="M10 6l1.8 3.5-3.5 1.7L10 6z" fill="#0099ff" />
-                  </svg>
+          {/* Link Grid */}
+          <div className="max-w-[1200px] mx-auto px-5 sm:px-8 py-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+              <div className="space-y-3 sm:col-span-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: '#181d27' }}>
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="7.5" stroke="#fafdff" strokeWidth="1.5" />
+                      <path d="M10 6l1.8 3.5-3.5 1.7L10 6z" fill="#0099ff" />
+                    </svg>
+                  </div>
+                  <span className="font-semibold text-sm" style={{ color: '#0a0d12' }}>CampusFind</span>
                 </div>
-                <span className="font-semibold text-sm" style={{ color: '#0a0d12' }}>CampusFind</span>
+                <p className="text-xs leading-relaxed max-w-sm" style={{ color: '#93979f' }}>
+                  University lost and found network connecting lost possessions to rightful owners using automated landmark proximity algorithms and encrypted claim verification.
+                </p>
+                <div className="flex items-center gap-2 text-xs" style={{ color: '#535862' }}>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span>Verified Campus Protocol 10.1</span>
+                </div>
               </div>
-              <p className="text-xs leading-relaxed max-w-sm" style={{ color: '#93979f' }}>
-                University lost and found network connecting lost possessions to rightful owners using automated landmark proximity algorithms and encrypted claim verification.
-              </p>
-              <div className="flex items-center gap-2 text-xs" style={{ color: '#535862' }}>
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>Verified Campus Protocol 10.1</span>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#0a0d12', letterSpacing: '0.06em' }}>Quick Links</h4>
+                <ul className="space-y-2 text-xs" style={{ color: '#535862' }}>
+                  <li><Link to="/browse" className="hover:text-[#0a0d12] transition-colors">Campus Directory</Link></li>
+                  <li><Link to="/report-lost" className="hover:text-[#0a0d12] transition-colors">Report Lost Item</Link></li>
+                  <li><Link to="/report-found" className="hover:text-[#0a0d12] transition-colors">Report Found Item</Link></li>
+                  <li><Link to="/my-listings" className="hover:text-[#0a0d12] transition-colors">My Listings &amp; Claims</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#0a0d12', letterSpacing: '0.06em' }}>Safety &amp; Handover</h4>
+                <p className="text-xs leading-relaxed" style={{ color: '#93979f' }}>
+                  Always arrange possession handovers at official university information desks during daylight hours. Never transfer money or reveal private credentials.
+                </p>
               </div>
             </div>
 
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#0a0d12', letterSpacing: '0.06em' }}>Quick Links</h4>
-              <ul className="space-y-2 text-xs" style={{ color: '#535862' }}>
-                <li><Link to="/browse" className="hover:text-[#0a0d12] transition-colors">Campus Directory</Link></li>
-                <li><Link to="/report-lost" className="hover:text-[#0a0d12] transition-colors">Report Lost Item</Link></li>
-                <li><Link to="/report-found" className="hover:text-[#0a0d12] transition-colors">Report Found Item</Link></li>
-                <li><Link to="/my-listings" className="hover:text-[#0a0d12] transition-colors">My Listings &amp; Claims</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#0a0d12', letterSpacing: '0.06em' }}>Safety &amp; Handover</h4>
-              <p className="text-xs leading-relaxed" style={{ color: '#93979f' }}>
-                Always arrange possession handovers at official university information desks during daylight hours. Never transfer money or reveal private credentials.
-              </p>
+            <div className="pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ borderColor: '#e8f1f8', color: '#93979f' }}>
+              <p>© {new Date().getFullYear()} CampusFind. Built for University Campus Communities.</p>
+              <div className="flex items-center gap-4">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#93979f' }} />
+                  Stateless JWT Security
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#93979f' }} />
+                  OpenStreetMap GIS
+                </span>
+              </div>
             </div>
           </div>
-
-          <div className="pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-xs" style={{ borderColor: '#e8f1f8', color: '#93979f' }}>
-            <p>© {new Date().getFullYear()} CampusFind. Built for University Campus Communities.</p>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#93979f' }} />
-                Stateless JWT Security
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#93979f' }} />
-                OpenStreetMap GIS
-              </span>
-            </div>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   )
 }
