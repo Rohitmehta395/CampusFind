@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -36,7 +36,7 @@ function escapeHtml(str) {
  * that possess valid campus latitude/longitude coordinates in the current result set.
  *
  * Design: Geniestudio daylight notebook style — Bone-white card at 32px radius,
- * charcoal popup button, pastel status chips.
+ * generous 480px map viewport, clean pins and pill badges.
  *
  * @param {Object} props
  * @param {Array<Object>} props.items - List of items currently displayed on BrowsePage
@@ -45,7 +45,6 @@ export default function ItemsMap({ items = [] }) {
   const mapContainerRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const markersGroupRef = useRef(null)
-  const [isOpen, setIsOpen] = useState(true)
 
   // Filter items that have real, non-null numeric coordinates
   const mappedItems = useMemo(
@@ -94,14 +93,14 @@ export default function ItemsMap({ items = [] }) {
     }
   }, [])
 
-  // Invalidate map dimensions when map visibility is toggled
+  // Invalidate map dimensions when mounted
   useEffect(() => {
-    if (isOpen && mapInstanceRef.current) {
+    if (mapInstanceRef.current) {
       setTimeout(() => {
         mapInstanceRef.current?.invalidateSize()
       }, 100)
     }
-  }, [isOpen])
+  }, [])
 
   // Update markers whenever mappedItems changes (reflects search/filters/page)
   useEffect(() => {
@@ -159,10 +158,10 @@ export default function ItemsMap({ items = [] }) {
   return (
     <div
       id="campus-items-map-card"
-      className="overflow-hidden transition-all mb-6"
+      className="overflow-hidden transition-all rounded-[32px] border shadow-xs"
       style={{
         background: '#fafdff',
-        borderRadius: '32px',
+        borderColor: '#e8f1f8',
         boxShadow: 'rgba(4, 69, 144, 0.05) 0px 4px 16px 0px',
       }}
     >
@@ -172,41 +171,32 @@ export default function ItemsMap({ items = [] }) {
         style={{ borderColor: '#e8f1f8' }}
       >
         <div className="flex items-center gap-2.5">
-          <span className="text-sm font-medium flex items-center gap-2" style={{ color: '#0a0d12' }}>
-            <span>🗺️</span> Campus Map View
+          <span className="text-sm font-semibold flex items-center gap-2" style={{ color: '#0a0d12' }}>
+            <span>🗺️</span> Interactive Campus Landmark Map
           </span>
           <span
             id="map-count-badge"
             className="text-[11px] font-medium px-2.5 py-0.5 rounded-full"
             style={{ background: '#cce7ff', color: '#0069e0' }}
           >
-            {mappedItems.length} {mappedItems.length === 1 ? 'item' : 'items'} mapped
+            {mappedItems.length} {mappedItems.length === 1 ? 'item' : 'items'} plotted
           </span>
         </div>
 
-        <button
-          id="toggle-map-btn"
-          type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
-          className="text-xs font-medium px-3.5 py-1.5 rounded-full transition-colors cursor-pointer"
-          style={{ background: '#ebf5ff', color: '#535862' }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#0a0d12')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#535862')}
-        >
-          {isOpen ? 'Hide Map' : 'Show Map'}
-        </button>
+        <span className="text-xs" style={{ color: '#93979f' }}>
+          Showing GPS landmark anchors
+        </span>
       </div>
 
       {/* Map Container */}
-      <div className={`relative ${isOpen ? 'block' : 'hidden'}`}>
+      <div className="relative">
         <div
           id="campus-map-container"
           ref={mapContainerRef}
-          className="w-full h-72 sm:h-80 z-0"
+          className="w-full h-96 sm:h-[480px] z-0"
           style={{ background: '#ebf5ff' }}
         />
 
-        {/* Informative overlay when 0 items on current view have coordinates */}
         {mappedItems.length === 0 && (
           <div
             id="map-empty-overlay"
