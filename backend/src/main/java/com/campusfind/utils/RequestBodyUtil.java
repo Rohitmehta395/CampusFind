@@ -333,5 +333,59 @@ public final class RequestBodyUtil {
             this.decision = decision;
         }
     }
+
+    /**
+     * Data Transfer Object for starting or retrieving a conversation (POST /api/conversations).
+     */
+    public static class StartConversationRequest {
+        private Long otherUserId;
+        private Long itemId;
+
+        public StartConversationRequest() {
+        }
+
+        public StartConversationRequest(Long otherUserId, Long itemId) {
+            this.otherUserId = otherUserId;
+            this.itemId = itemId;
+        }
+
+        public Long getOtherUserId() {
+            return otherUserId;
+        }
+
+        public void setOtherUserId(Long otherUserId) {
+            this.otherUserId = otherUserId;
+        }
+
+        public Long getItemId() {
+            return itemId;
+        }
+
+        public void setItemId(Long itemId) {
+            this.itemId = itemId;
+        }
+    }
+
+    /**
+     * Data Transfer Object for sending a message (POST /api/conversations/{id}/messages).
+     */
+    public static class SendMessageRequest {
+        private String text;
+
+        public SendMessageRequest() {
+        }
+
+        public SendMessageRequest(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setText(String text) {
+            this.text = text;
+        }
+    }
 }
 
