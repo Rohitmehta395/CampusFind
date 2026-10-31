@@ -10,6 +10,14 @@ const USER_KEY = 'campusfind_user'
  * Authentication provider component managing global user identity and JWT state.
  */
 export function AuthProvider({ children }) {
+  // In development, seed Rohit Mehta session if localStorage is clear so dev preview is immediately active
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    if (!localStorage.getItem(USER_KEY) && !sessionStorage.getItem('cf_logged_out')) {
+      localStorage.setItem(USER_KEY, JSON.stringify({ id: 9, name: 'Rohit Mehta', email: 'rohitmehtaddn@gmail.com', role: 'STUDENT' }))
+      localStorage.setItem(TOKEN_KEY, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI5IiwidXNlcklkIjo5LCJyb2xlIjoiU1RVREVOVCIsImlhdCI6MTc5MzQ3NTkzMywiZXhwIjoxNzkzNTYyMzMzfQ.5yShWp9kTzYngrugCrLblMU_HJQr1vNWAJWafGg4PEg')
+    }
+  }
+
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) || null)
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem(USER_KEY)
@@ -28,6 +36,9 @@ export function AuthProvider({ children }) {
    */
   const login = async (email, password) => {
     const data = await loginRequest(email, password)
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('cf_logged_out')
+    }
     setToken(data.token)
     setUser(data.user)
     localStorage.setItem(TOKEN_KEY, data.token)
@@ -47,6 +58,9 @@ export function AuthProvider({ children }) {
    * Clears authenticated session from state and localStorage.
    */
   const logout = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('cf_logged_out', '1')
+    }
     setToken(null)
     setUser(null)
     localStorage.removeItem(TOKEN_KEY)

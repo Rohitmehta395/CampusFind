@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import NotificationBell from '../components/NotificationBell'
@@ -8,7 +8,8 @@ import { checkHealth } from '../api/health'
  * Main layout component providing:
  * - Elevated daylight floating navigation bar
  * - Real-time campus connection status pill
- * - Quick "Report" dropdown CTA
+ * - Quick "+ Report Item" dropdown CTA
+ * - Professional User Profile avatar with dropdown account menu
  * - Responsive mobile drawer with pastel touchpoints
  * - Geniestudio daylight notebook footer
  */
@@ -16,15 +17,50 @@ export default function MainLayout() {
   const { user, logout } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [reportDropdownOpen, setReportDropdownOpen] = useState(false)
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const [backendOnline, setBackendOnline] = useState(false)
+  const userMenuRef = useRef(null)
+  const reportMenuRef = useRef(null)
   const location = useLocation()
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register'
+
+  // Close menus on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserDropdownOpen(false)
+      }
+      if (reportMenuRef.current && !reportMenuRef.current.contains(event.target)) {
+        setReportDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false)
     setReportDropdownOpen(false)
+    setUserDropdownOpen(false)
   }, [location.pathname])
+
+  const getInitials = (currentUser) => {
+    if (!currentUser) return 'U'
+    if (currentUser.name && currentUser.name.trim()) {
+      const parts = currentUser.name.trim().split(/\s+/)
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      }
+      return parts[0].slice(0, 2).toUpperCase()
+    }
+    if (currentUser.email) {
+      return currentUser.email[0].toUpperCase()
+    }
+    return 'U'
+  }
 
   // Check backend health periodically for connection badge
   useEffect(() => {
@@ -111,9 +147,9 @@ export default function MainLayout() {
           </nav>
 
           {/* Desktop Right Actions */}
-          <div className="hidden md:flex items-center gap-2.5 shrink-0">
+          <div className="hidden md:flex items-center gap-3 shrink-0">
             {/* Quick Report Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={reportMenuRef}>
               <button
                 type="button"
                 onClick={() => setReportDropdownOpen(!reportDropdownOpen)}
@@ -164,24 +200,139 @@ export default function MainLayout() {
 
             {user ? (
               <div className="flex items-center gap-2 pl-1">
+                {/* Notification Bell */}
                 <NotificationBell />
-                <span
-                  className="text-xs font-medium px-3 py-1 rounded-full max-w-[130px] truncate"
-                  style={{ background: '#ebf5ff', color: '#535862' }}
-                  title={user.email}
-                >
-                  {user.email}
-                </span>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="text-xs font-medium px-2.5 py-1 rounded-full transition-colors cursor-pointer hover:bg-rose-50"
-                  style={{ color: '#93979f' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#be123c'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#93979f'}
-                >
-                  Logout
-                </button>
+
+                {/* Professional User Profile Avatar & Dropdown */}
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="flex items-center gap-2 py-1 pl-1 pr-2.5 rounded-full border transition-all duration-150 cursor-pointer hover:shadow-xs group focus:outline-none focus:ring-2 focus:ring-[#0069e0]"
+                    style={{
+                      background: userDropdownOpen ? '#ffffff' : '#fafdff',
+                      borderColor: userDropdownOpen ? '#0069e0' : '#e8f1f8',
+                    }}
+                    aria-expanded={userDropdownOpen}
+                    aria-label="User account menu"
+                  >
+                    {/* Circle Avatar with User Initials */}
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs tracking-wider shadow-2xs group-hover:scale-105 transition-transform"
+                      style={{
+                        background: 'linear-gradient(135deg, #181d27 0%, #2d3748 100%)',
+                        color: '#ffffff',
+                      }}
+                    >
+                      {getInitials(user)}
+                    </div>
+
+                    {/* Down Chevron */}
+                    <svg
+                      className="w-3.5 h-3.5 transition-transform duration-200"
+                      style={{
+                        color: '#535862',
+                        transform: userDropdownOpen ? 'rotate(180deg)' : 'none',
+                      }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* User Dropdown Menu Card */}
+                  {userDropdownOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-64 p-2 rounded-2xl border shadow-lg space-y-1 z-50 animate-in fade-in zoom-in-95 duration-150"
+                      style={{
+                        background: '#ffffff',
+                        borderColor: '#e8f1f8',
+                        boxShadow: 'rgba(4, 69, 144, 0.08) 0px 14px 28px 0px, rgba(10, 13, 18, 0.04) 0px 2px 4px 0px',
+                      }}
+                    >
+                      {/* User Identity Header */}
+                      <div className="px-3 py-2.5 rounded-xl border-b mb-1" style={{ borderColor: '#f1f5f9' }}>
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-xs text-white shrink-0 shadow-2xs"
+                            style={{ background: '#181d27' }}
+                          >
+                            {getInitials(user)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-semibold truncate" style={{ color: '#0a0d12' }}>
+                              {user.name || 'Campus Student'}
+                            </div>
+                            <div className="text-[11px] truncate" style={{ color: '#535862' }} title={user.email}>
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                            style={{ background: '#d3f6e3', color: '#047857' }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            {user.role === 'ADMIN' ? 'Campus Admin' : 'Verified Student'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Dropdown Navigation Links */}
+                      <Link
+                        to="/my-listings"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-[#ebf5ff] group"
+                        style={{ color: '#0a0d12' }}
+                      >
+                        <span className="text-sm">📋</span>
+                        <span className="flex-1">My Reported Listings</span>
+                      </Link>
+
+                      <Link
+                        to="/report-lost"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-[#ebf5ff] group"
+                        style={{ color: '#0a0d12' }}
+                      >
+                        <span className="text-sm">🔍</span>
+                        <span className="flex-1">Report Lost Item</span>
+                      </Link>
+
+                      <Link
+                        to="/report-found"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-[#ebf5ff] group"
+                        style={{ color: '#0a0d12' }}
+                      >
+                        <span className="text-sm">📦</span>
+                        <span className="flex-1">Report Found Item</span>
+                      </Link>
+
+                      {/* Divider */}
+                      <div className="my-1 border-t" style={{ borderColor: '#f1f5f9' }} />
+
+                      {/* Logout Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserDropdownOpen(false)
+                          logout()
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-rose-50 cursor-pointer text-left group"
+                        style={{ color: '#be123c' }}
+                      >
+                        <svg className="w-4 h-4 text-rose-500 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span className="font-semibold">Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -254,15 +405,40 @@ export default function MainLayout() {
             </div>
 
             {user ? (
-              <div className="pt-3 border-t flex items-center justify-between px-2" style={{ borderColor: '#e8f1f8' }}>
-                <span className="text-xs truncate max-w-[200px]" style={{ color: '#93979f' }}>{user.email}</span>
+              <div className="pt-3 border-t space-y-3" style={{ borderColor: '#e8f1f8' }}>
+                <div className="flex items-center gap-2.5 px-2">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-xs text-white shrink-0"
+                    style={{ background: '#181d27' }}
+                  >
+                    {getInitials(user)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold truncate" style={{ color: '#0a0d12' }}>
+                      {user.name || 'Campus Student'}
+                    </div>
+                    <div className="text-[11px] truncate" style={{ color: '#535862' }}>
+                      {user.email}
+                    </div>
+                  </div>
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                    style={{ background: '#d3f6e3', color: '#047857' }}
+                  >
+                    <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                    Verified
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={logout}
-                  className="px-3 py-1 rounded-full text-xs font-medium cursor-pointer"
-                  style={{ background: '#ebf5ff', color: '#be123c' }}
+                  className="w-full py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  style={{ background: '#fff1f2', color: '#be123c' }}
                 >
-                  Logout
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Sign Out</span>
                 </button>
               </div>
             ) : (
