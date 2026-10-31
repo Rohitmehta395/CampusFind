@@ -4,6 +4,8 @@ import { useUnreadCount } from '../hooks/useUnreadCount'
 /**
  * Top navigation bell icon with dynamic unread notification badge.
  * Displays unread count, badge capped at '9+' for counts > 9, and hidden at 0.
+ *
+ * Design: Geniestudio daylight style — ghost icon button with iris-blue badge.
  */
 export default function NotificationBell() {
   const { unreadCount } = useUnreadCount()
@@ -14,7 +16,10 @@ export default function NotificationBell() {
     <Link
       id="notification-bell-link"
       to="/notifications"
-      className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-slate-400"
+      className="relative p-2 rounded-xl transition-colors flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0069e0]"
+      style={{ color: '#535862' }}
+      onMouseEnter={(e) => (e.currentTarget.style.color = '#0a0d12')}
+      onMouseLeave={(e) => (e.currentTarget.style.color = '#535862')}
       aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
       title="Notifications"
     >
@@ -39,7 +44,8 @@ export default function NotificationBell() {
       {unreadCount > 0 && (
         <span
           id="unread-count-badge"
-          className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none ring-2 ring-white shadow-xs animate-in fade-in duration-200"
+          className="absolute -top-0.5 -right-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center leading-none ring-2 ring-white"
+          style={{ background: '#0069e0', color: '#ffffff' }}
         >
           {badgeText}
         </span>

@@ -8,6 +8,9 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
  * Includes client-side guardrails (file type & 5MB size limit), local preview via URL.createObjectURL,
  * upload loading state, error display, and invocation of onUploadComplete(url).
  *
+ * Design: Geniestudio daylight notebook style — 24px rounded dashed upload zone,
+ * pastel error badges, and pill remove buttons.
+ *
  * @param {Object} props
  * @param {function(string): void} props.onUploadComplete - Callback receiving the uploaded Cloudinary secure URL
  * @param {string} [props.currentImageUrl] - Optional existing image URL to display initially
@@ -85,15 +88,12 @@ export default function ImageUploader({ onUploadComplete, currentImageUrl = '', 
 
   return (
     <div className="w-full">
-      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-        Item Photo <span className="text-slate-400 font-normal">(optional, max 5MB)</span>
-      </label>
-
       {/* Error Banner */}
       {error && (
         <div
           role="alert"
-          className="mb-3 p-2.5 rounded-lg text-xs bg-rose-50 text-rose-700 border border-rose-200 flex items-start gap-2"
+          className="mb-3 p-3 rounded-2xl text-xs flex items-start gap-2"
+          style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1 shrink-0" />
           <span>{error}</span>
@@ -102,19 +102,25 @@ export default function ImageUploader({ onUploadComplete, currentImageUrl = '', 
 
       {/* Preview or Drop Area */}
       {previewUrl ? (
-        <div className="relative rounded-xl border border-slate-200 bg-slate-50 overflow-hidden flex flex-col items-center justify-center p-3">
-          <div className="relative w-full h-48 sm:h-56 flex items-center justify-center overflow-hidden rounded-lg bg-slate-900/5">
+        <div
+          className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center p-4 border"
+          style={{ background: '#ebf5ff', borderColor: '#d5e6f0' }}
+        >
+          <div className="relative w-full h-48 sm:h-56 flex items-center justify-center overflow-hidden rounded-xl bg-white/60">
             <img
               src={previewUrl}
               alt="Item preview"
-              className="max-h-full max-w-full object-contain rounded"
+              className="max-h-full max-w-full object-contain rounded-lg"
             />
 
             {/* Uploading Overlay */}
             {uploading && (
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-white gap-2">
-                <span className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span className="text-xs font-medium">Uploading to Cloudinary...</span>
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center gap-2"
+                style={{ background: 'rgba(24, 29, 39, 0.75)', color: '#ffffff' }}
+              >
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="text-xs font-medium">Uploading to cloud…</span>
               </div>
             )}
           </div>
@@ -122,7 +128,7 @@ export default function ImageUploader({ onUploadComplete, currentImageUrl = '', 
           {/* Action Row */}
           {!uploading && (
             <div className="mt-3 flex items-center gap-2 w-full justify-between">
-              <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+              <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: '#047857' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
@@ -132,7 +138,8 @@ export default function ImageUploader({ onUploadComplete, currentImageUrl = '', 
               <button
                 type="button"
                 onClick={handleRemove}
-                className="px-2.5 py-1 text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded border border-rose-200 transition-colors"
+                className="px-3 py-1 text-xs font-medium rounded-full transition-colors cursor-pointer"
+                style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
               >
                 Remove Photo
               </button>
@@ -142,22 +149,37 @@ export default function ImageUploader({ onUploadComplete, currentImageUrl = '', 
       ) : (
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="cursor-pointer border-2 border-dashed border-slate-300 hover:border-slate-400 bg-slate-50 hover:bg-slate-100/60 rounded-xl p-6 text-center transition-colors flex flex-col items-center justify-center gap-2"
+          className="cursor-pointer border-2 border-dashed rounded-2xl p-6 text-center transition-all flex flex-col items-center justify-center gap-2"
+          style={{
+            borderColor: '#d5e6f0',
+            background: '#ebf5ff',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#0069e0'
+            e.currentTarget.style.background = '#e0f0ff'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = '#d5e6f0'
+            e.currentTarget.style.background = '#ebf5ff'
+          }}
         >
-          <div className="w-10 h-10 rounded-full bg-slate-200/70 flex items-center justify-center text-slate-500">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: '#cce7ff', color: '#0069e0' }}
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={1.75}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
           </div>
-          <div className="text-xs text-slate-600">
-            <span className="font-semibold text-slate-900">Click to upload</span> or drag and drop
+          <div className="text-xs" style={{ color: '#535862' }}>
+            <span className="font-semibold" style={{ color: '#0a0d12' }}>Click to upload</span> or drag and drop
           </div>
-          <p className="text-[11px] text-slate-400">PNG, JPG, WebP up to 5MB</p>
+          <p className="text-[11px]" style={{ color: '#93979f' }}>PNG, JPG, WebP up to 5MB</p>
         </div>
       )}
 

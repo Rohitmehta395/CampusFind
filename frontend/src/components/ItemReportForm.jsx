@@ -2,21 +2,24 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createItemRequest } from '../api/items'
 import ImageUploader from './ImageUploader'
-import { CATEGORY_OPTIONS } from '../constants/categories'
 import { CAMPUS_LANDMARKS } from '../constants/landmarks'
 
 /**
  * Shared form component for reporting either a lost or found item.
  *
+ * Enhanced Geniestudio visual design:
+ * - Segmented visual type switcher (Lost vs Found)
+ * - Tap-friendly category pill chips with icons
+ * - Popular landmark shortcut chips + full selector
+ * - Quick color tags + brand input
+ * - High-polish 32px card framing and charcoal submit CTA
+ *
  * @param {Object} props
  * @param {'LOST'|'FOUND'} props.type - The item classification
  */
-export default function ItemReportForm({ type }) {
-  const isLost = type === 'LOST'
-  const heading = isLost ? 'Report a Lost Item' : 'Report a Found Item'
-  const subtext = isLost
-    ? 'Provide details to help the campus community find and return your lost item'
-    : 'Provide details about an item you found so its owner can recover it'
+export default function ItemReportForm({ type: initialType = 'LOST' }) {
+  const [currentType, setCurrentType] = useState(initialType)
+  const isLost = currentType === 'LOST'
 
   const [formData, setFormData] = useState({
     title: '',
@@ -38,6 +41,21 @@ export default function ItemReportForm({ type }) {
 
   const navigate = useNavigate()
 
+  const categoryMeta = [
+    { name: 'Electronics', icon: '💻' },
+    { name: 'Bags & Backpacks', icon: '🎒' },
+    { name: 'ID Cards & Wallets', icon: '🪪' },
+    { name: 'Keys', icon: '🔑' },
+    { name: 'Books & Notebooks', icon: '📚' },
+    { name: 'Clothing & Apparel', icon: '👕' },
+    { name: 'Jewelry & Watches', icon: '⌚' },
+    { name: 'Bottles & Containers', icon: '🧴' },
+    { name: 'Other Possessions', icon: '📦' },
+  ]
+
+  const popularColors = ['Black', 'Silver', 'Blue', 'White', 'Red', 'Gray', 'Gold']
+  const popularLandmarks = CAMPUS_LANDMARKS.slice(0, 5)
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -46,17 +64,43 @@ export default function ItemReportForm({ type }) {
     }
   }
 
+  const handleCategorySelect = (catName) => {
+    setFormData((prev) => ({ ...prev, category: catName }))
+    if (errorField === 'category') setErrorField('')
+  }
+
+  const handleColorSelect = (c) => {
+    setFormData((prev) => ({ ...prev, color: prev.color === c ? '' : c }))
+  }
+
+  const handleLandmarkSelect = (lmName) => {
+    setSelectedLandmark((prev) => (prev === lmName ? '' : lmName))
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setErrorField('')
     setSuccessMsg('')
+
+    if (!formData.title.trim()) {
+      setError('Please provide a title for the item.')
+      setErrorField('title')
+      return
+    }
+
+    if (!formData.category) {
+      setError('Please select an item category.')
+      setErrorField('category')
+      return
+    }
+
     setLoading(true)
 
     try {
       const landmarkObj = CAMPUS_LANDMARKS.find((lm) => lm.name === selectedLandmark)
       const payload = {
-        type,
+        type: currentType,
         ...formData,
         imageUrl: imageUrl.trim() || undefined,
       }
@@ -70,13 +114,13 @@ export default function ItemReportForm({ type }) {
 
       setSuccessMsg(
         isLost
-          ? 'Lost item report submitted successfully! Redirecting...'
-          : 'Found item report submitted successfully! Redirecting...'
+          ? 'Lost item report submitted! Our proximity engine is scanning for matches…'
+          : 'Found item report submitted! Thank you for helping fellow campus students.'
       )
 
       setTimeout(() => {
         navigate('/my-listings')
-      }, 1200)
+      }, 1400)
     } catch (err) {
       const message = err.response?.data?.error || 'Failed to submit item report'
       const field = err.response?.data?.field || ''
@@ -88,18 +132,71 @@ export default function ItemReportForm({ type }) {
   }
 
   return (
-    <div className="max-w-xl w-full bg-white rounded-xl shadow-md p-8 border border-slate-200">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          {heading}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">{subtext}</p>
+    <div
+      className="max-w-2xl w-full p-7 sm:p-11 transition-all"
+      style={{
+        background: '#fafdff',
+        borderRadius: '32px',
+        boxShadow: 'rgba(4, 69, 144, 0.08) 0px 16px 36px 0px',
+        border: '1px solid #e8f1f8',
+      }}
+    >
+      {/* ── Type Switcher Pill ── */}
+      <div className="flex justify-center mb-8">
+        <div
+          className="inline-flex p-1.5 rounded-full border"
+          style={{ background: '#ebf5ff', borderColor: '#d5e6f0' }}
+        >
+          <button
+            type="button"
+            onClick={() => setCurrentType('LOST')}
+            className="flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer"
+            style={{
+              background: isLost ? '#181d27' : 'transparent',
+              color: isLost ? '#ffffff' : '#535862',
+              boxShadow: isLost ? 'rgba(10, 13, 18, 0.4) 0px 2px 4px' : 'none',
+            }}
+          >
+            <span>🔍</span>
+            <span>I Lost Something</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentType('FOUND')}
+            className="flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer"
+            style={{
+              background: !isLost ? '#181d27' : 'transparent',
+              color: !isLost ? '#ffffff' : '#535862',
+              boxShadow: !isLost ? 'rgba(10, 13, 18, 0.4) 0px 2px 4px' : 'none',
+            }}
+          >
+            <span>📦</span>
+            <span>I Found Something</span>
+          </button>
+        </div>
       </div>
 
+      {/* Header Info */}
+      <div className="text-center mb-8">
+        <h1
+          className="text-2xl sm:text-3xl font-medium tracking-tight"
+          style={{ color: '#0a0d12', letterSpacing: '-0.02em' }}
+        >
+          {isLost ? 'Report a Lost Possession' : 'Register a Found Possession'}
+        </h1>
+        <p className="mt-2 text-xs sm:text-sm leading-relaxed" style={{ color: '#535862' }}>
+          {isLost
+            ? 'Provide key identifying details so honest finders and campus security can verify your ownership.'
+            : 'Log where and when you found this item so its owner can submit proof and reclaim it.'}
+        </p>
+      </div>
+
+      {/* Notifications */}
       {error && (
         <div
           role="alert"
-          className="mb-4 p-3 rounded-lg text-sm bg-rose-50 text-rose-700 border border-rose-200 flex items-start gap-2"
+          className="mb-6 p-4 rounded-2xl text-xs flex items-start gap-2.5"
+          style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
           <span>{error}</span>
@@ -109,21 +206,24 @@ export default function ItemReportForm({ type }) {
       {successMsg && (
         <div
           role="status"
-          className="mb-4 p-3 rounded-lg text-sm bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-start gap-2"
+          className="mb-6 p-4 rounded-2xl text-xs flex items-start gap-2.5"
+          style={{ background: '#d3f6e3', color: '#047857', border: '1px solid #a7f3d0' }}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Title (Required) */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+
+        {/* 1. Title Input */}
         <div>
           <label
             htmlFor="title"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
+            className="block text-xs font-semibold uppercase tracking-wider mb-2"
+            style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
           >
-            Title <span className="text-rose-500">*</span>
+            Item Name / Title <span style={{ color: '#be123c' }}>*</span>
           </label>
           <input
             id="title"
@@ -134,54 +234,64 @@ export default function ItemReportForm({ type }) {
             onChange={handleChange}
             placeholder={
               isLost
-                ? 'e.g. Blue Hydro Flask, Silver MacBook Pro 14"'
-                : 'e.g. Black Casio Calculator, Set of House Keys'
+                ? 'e.g. Blue Hydro Flask 32oz, Silver MacBook Pro 14"'
+                : 'e.g. Casio Scientific Calculator, Set of Keys with Blue Lanyard'
             }
-            className={`w-full px-3.5 py-2 rounded-lg border text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition ${
-              errorField === 'title'
-                ? 'border-rose-400 bg-rose-50/30'
-                : 'border-slate-300'
-            }`}
+            className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all"
+            style={{
+              background: '#ebf5ff',
+              border: errorField === 'title' ? '1.5px solid #be123c' : '1.5px solid #e8f1f8',
+              color: '#0a0d12',
+              outlineColor: '#0069e0',
+            }}
           />
         </div>
 
-        {/* Category (Required) */}
+        {/* 2. Interactive Category Pill Grid */}
         <div>
           <label
-            htmlFor="category"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
+            className="block text-xs font-semibold uppercase tracking-wider mb-2"
+            style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
           >
-            Category <span className="text-rose-500">*</span>
+            Select Category <span style={{ color: '#be123c' }}>*</span>
           </label>
-          <select
-            id="category"
-            name="category"
-            required
-            value={formData.category}
-            onChange={handleChange}
-            className={`w-full px-3.5 py-2 rounded-lg border text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition ${
-              errorField === 'category'
-                ? 'border-rose-400 bg-rose-50/30'
-                : 'border-slate-300'
-            }`}
-          >
-            <option value="">Select a category...</option>
-            {CATEGORY_OPTIONS.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {categoryMeta.map((cat) => {
+              const isSelected = formData.category === cat.name
+              return (
+                <button
+                  type="button"
+                  key={cat.name}
+                  onClick={() => handleCategorySelect(cat.name)}
+                  className="flex items-center gap-2 p-3 rounded-2xl text-xs font-medium border text-left transition-all cursor-pointer"
+                  style={{
+                    background: isSelected ? '#181d27' : '#ebf5ff',
+                    color: isSelected ? '#ffffff' : '#0a0d12',
+                    borderColor: isSelected ? '#181d27' : '#e8f1f8',
+                    transform: isSelected ? 'scale(1.02)' : 'none',
+                  }}
+                >
+                  <span className="text-base select-none">{cat.icon}</span>
+                  <span className="truncate">{cat.name}</span>
+                </button>
+              )
+            })}
+          </div>
+          {errorField === 'category' && (
+            <p className="mt-1.5 text-xs" style={{ color: '#be123c' }}>Please pick a category</p>
+          )}
         </div>
 
-        {/* Color and Brand row (Optional) */}
+        {/* 3. Primary Color & Brand Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label
               htmlFor="color"
-              className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
+              className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+              style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
             >
-              Color <span className="text-slate-400 font-normal">(optional)</span>
+              Primary Color <span style={{ color: '#93979f' }}>(optional)</span>
             </label>
             <input
               id="color"
@@ -189,21 +299,43 @@ export default function ItemReportForm({ type }) {
               type="text"
               value={formData.color}
               onChange={handleChange}
-              placeholder="e.g. Navy Blue, Matte Black"
-              className={`w-full px-3.5 py-2 rounded-lg border text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition ${
-                errorField === 'color'
-                  ? 'border-rose-400 bg-rose-50/30'
-                  : 'border-slate-300'
-              }`}
+              placeholder="e.g. Matte Black, Navy"
+              className="w-full px-4 py-2.5 rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all mb-2"
+              style={{
+                background: '#ebf5ff',
+                border: '1.5px solid #e8f1f8',
+                color: '#0a0d12',
+                outlineColor: '#0069e0',
+              }}
             />
+            {/* Quick color chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {popularColors.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => handleColorSelect(c)}
+                  className="text-[11px] px-2.5 py-0.5 rounded-full border transition-all cursor-pointer"
+                  style={{
+                    background: formData.color === c ? '#cce7ff' : '#ffffff',
+                    color: formData.color === c ? '#0069e0' : '#535862',
+                    borderColor: formData.color === c ? '#0069e0' : '#e8f1f8',
+                    fontWeight: formData.color === c ? 600 : 400,
+                  }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
             <label
               htmlFor="brand"
-              className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
+              className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+              style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
             >
-              Brand <span className="text-slate-400 font-normal">(optional)</span>
+              Brand / Make <span style={{ color: '#93979f' }}>(optional)</span>
             </label>
             <input
               id="brand"
@@ -211,99 +343,133 @@ export default function ItemReportForm({ type }) {
               type="text"
               value={formData.brand}
               onChange={handleChange}
-              placeholder="e.g. Apple, Casio, Hydro Flask"
-              className={`w-full px-3.5 py-2 rounded-lg border text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition ${
-                errorField === 'brand'
-                  ? 'border-rose-400 bg-rose-50/30'
-                  : 'border-slate-300'
-              }`}
+              placeholder="e.g. Apple, Nike, Casio, Hydro Flask"
+              className="w-full px-4 py-2.5 rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all"
+              style={{
+                background: '#ebf5ff',
+                border: '1.5px solid #e8f1f8',
+                color: '#0a0d12',
+                outlineColor: '#0069e0',
+              }}
             />
           </div>
         </div>
 
-        {/* Campus Landmark (Optional) */}
+        {/* 4. Campus Landmark Proximity Selector */}
         <div>
           <label
             htmlFor="landmark"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
+            className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+            style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
           >
-            Campus Landmark <span className="text-slate-400 font-normal">(optional)</span>
+            Campus Landmark Anchor <span style={{ color: '#93979f' }}>(for GPS proximity engine)</span>
           </label>
+
+          {/* Quick landmark chips */}
+          <div className="flex flex-wrap gap-1.5 mb-2.5">
+            {popularLandmarks.map((lm) => (
+              <button
+                key={lm.name}
+                type="button"
+                onClick={() => handleLandmarkSelect(lm.name)}
+                className="text-[11px] px-3 py-1 rounded-full border transition-all cursor-pointer"
+                style={{
+                  background: selectedLandmark === lm.name ? '#181d27' : '#ebf5ff',
+                  color: selectedLandmark === lm.name ? '#ffffff' : '#0a0d12',
+                  borderColor: selectedLandmark === lm.name ? '#181d27' : '#e8f1f8',
+                  fontWeight: selectedLandmark === lm.name ? 600 : 400,
+                }}
+              >
+                📍 {lm.name}
+              </button>
+            ))}
+          </div>
+
           <select
             id="landmark"
             name="landmark"
             value={selectedLandmark}
             onChange={(e) => setSelectedLandmark(e.target.value)}
-            className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
+            className="w-full px-4 py-3 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 transition-all cursor-pointer"
+            style={{
+              background: '#ebf5ff',
+              border: '1.5px solid #e8f1f8',
+              color: selectedLandmark ? '#0a0d12' : '#93979f',
+              outlineColor: '#0069e0',
+            }}
           >
-            <option value="">Not specified</option>
+            <option value="">Or select from all campus landmarks…</option>
             {CAMPUS_LANDMARKS.map((lm) => (
               <option key={lm.name} value={lm.name}>
                 {lm.name}
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-slate-500">
-            Choose a nearby campus landmark to enable smart location proximity matching.
+          <p className="mt-1.5 text-xs" style={{ color: '#93979f' }}>
+            Selecting a landmark triggers proximity matching within a 200m zone.
           </p>
         </div>
 
-        {/* Location Text (Optional) */}
-        <div>
-          <label
-            htmlFor="locationText"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
-          >
-            Location Description <span className="text-slate-400 font-normal">(optional)</span>
-          </label>
-          <input
-            id="locationText"
-            name="locationText"
-            type="text"
-            value={formData.locationText}
-            onChange={handleChange}
-            placeholder={
-              isLost
-                ? 'Where was it last seen? (e.g. Science Library 2nd floor, Student Union)'
-                : 'Where was it found? (e.g. Math Hall 101 Desk 3B, Dining Hall Table 4)'
-            }
-            className={`w-full px-3.5 py-2 rounded-lg border text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition ${
-              errorField === 'locationText'
-                ? 'border-rose-400 bg-rose-50/30'
-                : 'border-slate-300'
-            }`}
-          />
+        {/* 5. Specific Location Description & Date */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label
+              htmlFor="locationText"
+              className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+              style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
+            >
+              Exact Room / Spot <span style={{ color: '#93979f' }}>(optional)</span>
+            </label>
+            <input
+              id="locationText"
+              name="locationText"
+              type="text"
+              value={formData.locationText}
+              onChange={handleChange}
+              placeholder={isLost ? 'e.g. 2nd Floor, Table near windows' : 'e.g. Desk 14, Lecture Hall B'}
+              className="w-full px-4 py-2.5 rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all"
+              style={{
+                background: '#ebf5ff',
+                border: '1.5px solid #e8f1f8',
+                color: '#0a0d12',
+                outlineColor: '#0069e0',
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="eventDate"
+              className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+              style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
+            >
+              Date {isLost ? 'Lost' : 'Found'} <span style={{ color: '#93979f' }}>(optional)</span>
+            </label>
+            <input
+              id="eventDate"
+              name="eventDate"
+              type="date"
+              value={formData.eventDate}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all"
+              style={{
+                background: '#ebf5ff',
+                border: '1.5px solid #e8f1f8',
+                color: '#0a0d12',
+                outlineColor: '#0069e0',
+              }}
+            />
+          </div>
         </div>
 
-        {/* Event Date (Optional) */}
-        <div>
-          <label
-            htmlFor="eventDate"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
-          >
-            Date {isLost ? 'Lost' : 'Found'} <span className="text-slate-400 font-normal">(optional)</span>
-          </label>
-          <input
-            id="eventDate"
-            name="eventDate"
-            type="date"
-            value={formData.eventDate}
-            onChange={handleChange}
-            className={`w-full px-3.5 py-2 rounded-lg border text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition ${
-              errorField === 'eventDate'
-                ? 'border-rose-400 bg-rose-50/30'
-                : 'border-slate-300'
-            }`}
-          />
-        </div>
-
-        {/* Description (Optional) */}
+        {/* 6. Description Textarea */}
         <div>
           <label
             htmlFor="description"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1"
+            className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+            style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
           >
-            Description <span className="text-slate-400 font-normal">(optional)</span>
+            Distinctive Features &amp; Clues <span style={{ color: '#93979f' }}>(optional)</span>
           </label>
           <textarea
             id="description"
@@ -311,17 +477,25 @@ export default function ItemReportForm({ type }) {
             rows="3"
             value={formData.description}
             onChange={handleChange}
-            placeholder="Add any distinctive features, stickers, scratches, or details..."
-            className={`w-full px-3.5 py-2 rounded-lg border text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition ${
-              errorField === 'description'
-                ? 'border-rose-400 bg-rose-50/30'
-                : 'border-slate-300'
-            }`}
+            placeholder="Add any stickers, keychains, scratches, case styles, or identifiers that help confirm ownership..."
+            className="w-full px-4 py-3 rounded-2xl text-sm focus:outline-none focus:ring-2 transition-all"
+            style={{
+              background: '#ebf5ff',
+              border: '1.5px solid #e8f1f8',
+              color: '#0a0d12',
+              outlineColor: '#0069e0',
+            }}
           />
         </div>
 
-        {/* Photo Upload (Optional) */}
+        {/* 7. Enhanced Image Upload Zone */}
         <div>
+          <label
+            className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+            style={{ color: '#0a0d12', letterSpacing: '0.04em' }}
+          >
+            Photograph Attachment <span style={{ color: '#93979f' }}>(optional)</span>
+          </label>
           <ImageUploader
             currentImageUrl={imageUrl}
             onUploadComplete={(url) => {
@@ -333,25 +507,29 @@ export default function ItemReportForm({ type }) {
             }}
           />
           {uploadError && (
-            <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-              Note: Image upload could not be completed ({uploadError}). You may still submit your report without an image or try uploading again.
+            <p
+              className="mt-2 text-xs p-3 rounded-2xl"
+              style={{ background: '#fff2be', color: '#854d0e', border: '1px solid #fde047' }}
+            >
+              Note: Image upload could not be completed ({uploadError}). You may still submit without a photo.
             </p>
           )}
         </div>
 
-        {/* Submit Button */}
+        {/* 8. Submit Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full mt-2 py-2.5 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full mt-4 btn-charcoal justify-center text-center py-4 text-base cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed shadow-md"
+          style={{ width: '100%' }}
         >
           {loading ? (
             <>
-              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              <span>Submitting report...</span>
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Registering item on campus network…</span>
             </>
           ) : (
-            isLost ? 'Submit Lost Item Report' : 'Submit Found Item Report'
+            isLost ? 'Submit Lost Item Report →' : 'Publish Found Item Listing →'
           )}
         </button>
       </form>

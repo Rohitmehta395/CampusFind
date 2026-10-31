@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 
 /**
  * Public item detail page presenting the full metadata and description of a single item.
- * Supports public viewing at /items/:id.
+ * Supports public viewing at /items/:id with Geniestudio daylight notebook design.
  *
  * When the viewer is a logged-in non-owner and the item is ACTIVE, provides a "Claim This Item"
  * submission form allowing users to submit ownership evidence.
@@ -72,18 +72,9 @@ export default function ItemDetailPage() {
   }, [id])
 
   useEffect(() => {
-    let isMounted = true
-    setLoading(true)
-    setError('')
-    setIsNotFound(false)
-
     fetchItem().catch(() => {
       // Handled in fetchItem
     })
-
-    return () => {
-      isMounted = false
-    }
   }, [fetchItem])
 
   // Fetch matches only when viewer is verified as the item's reporter
@@ -131,12 +122,11 @@ export default function ItemDetailPage() {
   }, [isOwner, item?.id])
 
   useEffect(() => {
-    fetchMatches()
-  }, [fetchMatches])
-
-  useEffect(() => {
-    fetchClaims()
-  }, [fetchClaims])
+    if (isOwner && item?.id) {
+      fetchMatches()
+      fetchClaims()
+    }
+  }, [isOwner, item?.id, fetchMatches, fetchClaims])
 
   // Handle claim review action (Approve or Reject)
   const handleReviewClaim = async (claimId, decision) => {
@@ -144,7 +134,6 @@ export default function ItemDetailPage() {
     setReviewActionError('')
     try {
       await reviewClaimRequest(claimId, decision)
-      // On successful review: refetch claims and item so UI reflects updated claim status and RESOLVED item status
       await Promise.all([fetchClaims(), fetchItem()])
     } catch (err) {
       setReviewActionError(err.response?.data?.error || err.message || 'Failed to update claim')
@@ -178,10 +167,13 @@ export default function ItemDetailPage() {
 
   if (loading) {
     return (
-      <div className="py-20 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-slate-100 text-slate-600">
-          <span className="w-2.5 h-2.5 rounded-full bg-slate-400 animate-pulse" />
-          Loading item details...
+      <div className="w-full min-h-[60vh] flex items-center justify-center px-4 py-20" style={{ background: '#ebf5ff' }}>
+        <div
+          className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-xs font-medium"
+          style={{ background: '#fafdff', color: '#535862' }}
+        >
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#0069e0' }} />
+          Loading report details…
         </div>
       </div>
     )
@@ -189,33 +181,30 @@ export default function ItemDetailPage() {
 
   if (isNotFound) {
     return (
-      <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8 text-center border border-slate-200 mx-auto mt-12">
-        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-3">
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <div className="w-full min-h-[60vh] flex items-center justify-center px-4 py-16" style={{ background: '#ebf5ff' }}>
+        <div
+          className="max-w-md w-full p-8 text-center space-y-4"
+          style={{ background: '#fafdff', borderRadius: '32px' }}
+        >
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
+            style={{ background: '#fff1f2', color: '#be123c' }}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
-        <h2 className="text-xl font-bold text-slate-900">Item Not Found</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          The item with ID #{id} does not exist or may have been removed.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/browse"
-            className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition-colors"
-          >
-            Back to Browse
-          </Link>
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-medium" style={{ color: '#0a0d12' }}>Listing Not Found</h2>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: '#93979f' }}>
+              The item with reference #{id} does not exist or may have been archived.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link to="/browse" className="btn-charcoal-sm justify-center">
+              ← Back to Public Directory
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -223,16 +212,18 @@ export default function ItemDetailPage() {
 
   if (error) {
     return (
-      <div className="max-w-md w-full bg-rose-50 border border-rose-200 rounded-xl p-6 text-center text-rose-700 mx-auto mt-12">
-        <h2 className="text-base font-semibold">Error Loading Item</h2>
-        <p className="mt-1 text-xs text-rose-600">{error}</p>
-        <div className="mt-4">
-          <Link
-            to="/browse"
-            className="text-xs font-semibold text-rose-800 hover:underline"
-          >
-            &larr; Return to Browse
-          </Link>
+      <div className="w-full min-h-[60vh] flex items-center justify-center px-4 py-16" style={{ background: '#ebf5ff' }}>
+        <div
+          className="max-w-md w-full p-8 text-center space-y-3"
+          style={{ background: '#fff1f2', borderRadius: '32px', color: '#be123c' }}
+        >
+          <h2 className="text-sm font-semibold">Error Loading Listing</h2>
+          <p className="text-xs opacity-80">{error}</p>
+          <div className="pt-2">
+            <Link to="/browse" className="btn-charcoal-sm justify-center">
+              ← Return to Browse
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -244,673 +235,618 @@ export default function ItemDetailPage() {
   const isResolved = item.status === 'RESOLVED'
 
   return (
-    <div className="max-w-3xl w-full mx-auto py-4">
-      {/* Breadcrumb / Back Link */}
-      <div className="mb-4">
-        <Link
-          to="/browse"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <div
+      className="w-full min-h-screen px-5 sm:px-8 py-10"
+      style={{ background: '#ebf5ff' }}
+    >
+      <div className="max-w-[1200px] mx-auto space-y-8">
+
+        {/* Top Breadcrumb Navigation */}
+        <div className="flex items-center justify-between">
+          <Link
+            to="/browse"
+            className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors"
+            style={{ color: '#535862' }}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"
-            />
-          </svg>
-          Back to Browse
-        </Link>
-      </div>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Directory
+          </Link>
 
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-        {/* Header / Type Banner */}
-        <div className="p-6 sm:p-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                  isLost
-                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                    : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                }`}
-              >
-                {item.type} ITEM
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                {item.category}
-              </span>
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                  item.status === 'ACTIVE'
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : item.status === 'RESOLVED'
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-slate-200 text-slate-700'
-                }`}
-              >
-                {item.status}
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              {item.title}
-            </h1>
-          </div>
-
-          <div className="text-right text-xs text-slate-400 shrink-0">
-            <div>Report #{item.id}</div>
-            {item.createdAt && (
-              <div className="mt-0.5">
-                Reported {item.createdAt.substring(0, 10)}
-              </div>
-            )}
+          <div className="flex items-center gap-2 text-xs font-mono" style={{ color: '#93979f' }}>
+            <span>Record #{item.id}</span>
+            {item.createdAt && <span>• {item.createdAt.substring(0, 10)}</span>}
           </div>
         </div>
 
-        {/* Visual Container */}
-        <div className="h-64 sm:h-80 bg-slate-50 border-b border-slate-100 flex items-center justify-center text-slate-400 overflow-hidden">
-          {item.imageUrl ? (
-            <img
-              src={item.imageUrl}
-              alt={item.title}
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
-              <svg
-                className="w-12 h-12 opacity-40"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        {/* Main Two-Column Detail View */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+          {/* Left Column: Visual Media & Landmark Context (5 cols) */}
+          <div className="lg:col-span-5 space-y-6">
+            <div
+              className="overflow-hidden"
+              style={{
+                background: '#fafdff',
+                borderRadius: '32px',
+                boxShadow: 'rgba(4, 69, 144, 0.05) 0px 4px 16px 0px',
+              }}
+            >
+              <div
+                className="h-72 sm:h-96 flex items-center justify-center relative overflow-hidden"
+                style={{
+                  background: isLost ? '#fff1f2' : '#d3f6e3',
+                  borderRadius: '32px',
+                }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <span className="text-xs font-medium text-slate-400">
-                No photo uploaded for this report
-              </span>
-            </div>
-          )}
-        </div>
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-full h-full object-contain p-4"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <svg
+                      className="w-12 h-12 opacity-30"
+                      fill="none"
+                      stroke={isLost ? '#be123c' : '#047857'}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span
+                      className="text-xs font-medium uppercase tracking-wider"
+                      style={{ color: isLost ? '#be123c' : '#047857', opacity: 0.6 }}
+                    >
+                      No photograph provided
+                    </span>
+                  </div>
+                )}
 
-        {/* Details Grid */}
-        <div className="p-6 sm:p-8 space-y-6">
-          {/* Key Attributes Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-0.5">
-                Location
-              </span>
-              <span className="text-slate-800 font-medium">
-                {item.locationText || 'Not specified'}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-0.5">
-                Date {isLost ? 'Lost' : 'Found'}
-              </span>
-              <span className="text-slate-800 font-medium">
-                {item.eventDate || 'Not specified'}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-0.5">
-                Color
-              </span>
-              <span className="text-slate-800 font-medium">
-                {item.color || 'Not specified'}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-0.5">
-                Brand / Manufacturer
-              </span>
-              <span className="text-slate-800 font-medium">
-                {item.brand || 'Not specified'}
-              </span>
-            </div>
-          </div>
-
-          {/* Description Section */}
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-2">
-              Item Description
-            </h3>
-            <div className="text-sm text-slate-700 leading-relaxed bg-white border border-slate-100 p-4 rounded-lg">
-              {item.description ? (
-                <p className="whitespace-pre-line">{item.description}</p>
-              ) : (
-                <p className="text-slate-400 italic">No additional description provided.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Non-Owner Claim Section: Logged-in non-owner viewing an ACTIVE item */}
-      {canClaim && (
-        <section className="mt-8 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden p-6 sm:p-8">
-          <div className="flex items-center gap-3 pb-4 border-b border-slate-100 mb-6">
-            <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Claim This Item</h2>
-              <p className="text-xs text-slate-500">
-                Believe this belongs to you? Submit identifying details to verify your ownership.
-              </p>
-            </div>
-          </div>
-
-          {claimSuccess ? (
-            <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800">
-              <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <div className="text-sm">
-                  <p className="font-semibold text-emerald-900">Claim submitted successfully!</p>
-                  <p className="mt-1 text-emerald-700 text-xs leading-relaxed">
-                    The item reporter will review your evidence. Once verified, you will be notified.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setClaimSuccess(false)}
-                    className="mt-3 inline-flex items-center text-xs font-semibold text-emerald-900 underline hover:no-underline"
+                {/* Floating Status Badges */}
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <span
+                    className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                    style={
+                      isLost
+                        ? { background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }
+                        : { background: '#d3f6e3', color: '#047857', border: '1px solid #a7f3d0' }
+                    }
                   >
-                    Submit additional evidence or another claim
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleClaimSubmit} className="space-y-4">
-              {claimError && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
-                  {claimError}
-                </div>
-              )}
+                    {item.type}
+                  </span>
 
-              <div>
-                <label htmlFor="evidenceText" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Ownership Evidence / Proof
-                </label>
-                <textarea
-                  id="evidenceText"
-                  rows={4}
-                  value={evidenceText}
-                  onChange={(e) => setEvidenceText(e.target.value)}
-                  placeholder="Describe unique identifying marks, serial numbers, screen wallpapers, secret compartments, exact contents, or where/when you lost it..."
-                  className="w-full text-sm rounded-lg border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-                  disabled={claimSubmitting}
-                />
-                <div className="flex items-center justify-between text-xs text-slate-400 mt-1">
-                  <span>Only the item's reporter will see your evidence.</span>
-                  <span className={evidenceText.trim().length >= 10 ? 'text-slate-400' : 'text-amber-600 font-medium'}>
-                    {evidenceText.trim().length}/10 min characters
+                  <span
+                    className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider"
+                    style={
+                      item.status === 'ACTIVE'
+                        ? { background: '#cce7ff', color: '#0069e0', border: '1px solid #99cfff' }
+                        : item.status === 'RESOLVED'
+                        ? { background: '#d3f6e3', color: '#047857', border: '1px solid #a7f3d0' }
+                        : { background: '#fafdff', color: '#535862', border: '1px solid #e8f1f8' }
+                    }
+                  >
+                    {item.status}
                   </span>
                 </div>
               </div>
+            </div>
 
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={claimSubmitting || evidenceText.trim().length < 10}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-xs"
-                >
-                  {claimSubmitting ? (
-                    <>
-                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Submitting Claim...
-                    </>
-                  ) : (
-                    'Submit Ownership Claim'
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-        </section>
-      )}
-
-      {/* Logged-Out Prompt: When viewer is not authenticated on an ACTIVE item */}
-      {isLoggedOutViewer && (
-        <section className="mt-8 bg-slate-50 rounded-xl border border-slate-200 p-6 text-center">
-          <p className="text-sm text-slate-700 font-medium">
-            Are you the owner of this item?
-          </p>
-          <p className="text-xs text-slate-500 mt-1">
-            Sign in to submit an ownership claim with identifying proof.
-          </p>
-          <div className="mt-4">
-            <Link
-              to="/login"
-              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors"
+            {/* Campus Location Card */}
+            <div
+              className="p-6 space-y-3"
+              style={{
+                background: '#fafdff',
+                borderRadius: '32px',
+                boxShadow: 'rgba(4, 69, 144, 0.05) 0px 4px 16px 0px',
+              }}
             >
-              Sign In to Claim
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {/* Resolved Banner for Non-Owners */}
-      {!isOwner && isResolved && (
-        <section className="mt-8 bg-slate-50 rounded-xl border border-slate-200 p-5 text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            This item has been RESOLVED and returned to its verified owner.
-          </span>
-        </section>
-      )}
-
-      {/* Claims on This Item Section - Strictly Owner-Gated */}
-      {isOwner && (
-        <section className="mt-8 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden p-6 sm:p-8">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-xl" style={{ background: '#ebf5ff', color: '#0069e0' }}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  </svg>
+                </span>
+                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#0a0d12', letterSpacing: '0.04em' }}>
+                  Campus Location Reference
+                </h3>
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  Claims on This Item
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Review ownership verification evidence submitted by claimants
-                </p>
-              </div>
-            </div>
-            {!claimsLoading && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                {claims.length} {claims.length === 1 ? 'claim' : 'claims'}
-              </span>
-            )}
-          </div>
-
-          {claimsLoading && (
-            <div className="py-8 text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                Loading claims...
-              </div>
-            </div>
-          )}
-
-          {claimsError && (
-            <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center justify-between">
-              <span>{claimsError}</span>
-              <button
-                type="button"
-                onClick={fetchClaims}
-                className="font-semibold underline hover:no-underline text-rose-800"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {reviewActionError && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
-              {reviewActionError}
-            </div>
-          )}
-
-          {!claimsLoading && !claimsError && claims.length === 0 && (
-            <div className="text-center py-10 px-4 bg-slate-50 rounded-xl border border-slate-200/70">
-              <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-slate-800">
-                No claims submitted yet
-              </h3>
-              <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                When another community member files an ownership claim on this item, their submitted evidence will appear here for your review.
+              <p className="text-sm font-medium" style={{ color: '#0a0d12' }}>
+                {item.locationText || 'Campus Grounds (Unspecified Location)'}
               </p>
+              {item.latitude && item.longitude && (
+                <div
+                  className="text-xs font-mono p-2.5 rounded-xl"
+                  style={{ background: '#ebf5ff', color: '#535862' }}
+                >
+                  GPS: {Number(item.latitude).toFixed(4)}, {Number(item.longitude).toFixed(4)}
+                </div>
+              )}
+              <div className="pt-2 text-xs leading-relaxed border-t" style={{ borderColor: '#e8f1f8', color: '#93979f' }}>
+                💡 <strong style={{ color: '#535862' }}>Handover Safety:</strong> All physical exchanges should occur during daylight at campus reception desks or the Student Union.
+              </div>
             </div>
-          )}
+          </div>
 
-          {!claimsLoading && !claimsError && claims.length > 0 && (
-            <div className="space-y-4">
-              {claims.map((c) => {
-                const isPending = c.status === 'PENDING'
-                const isApproved = c.status === 'APPROVED'
-                const isRejected = c.status === 'REJECTED'
-                const isActing = reviewingClaimId === c.id
-
-                return (
-                  <div
-                    key={c.id}
-                    className="p-4 sm:p-5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-3"
+          {/* Right Column: Metadata, Description & Claim Actions (7 cols) */}
+          <div className="lg:col-span-7 space-y-6">
+            <div
+              className="p-8 sm:p-10 space-y-6"
+              style={{
+                background: '#fafdff',
+                borderRadius: '32px',
+                boxShadow: 'rgba(4, 69, 144, 0.05) 0px 4px 16px 0px',
+              }}
+            >
+              {/* Title & Category Banner */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="px-3 py-1 rounded-full text-xs font-medium"
+                    style={{ background: '#ebf5ff', color: '#0a0d12' }}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-semibold">
-                          #{c.claimantId}
-                        </span>
-                        <div>
-                          <div className="text-sm font-bold text-slate-900">
-                            Claimant #{c.claimantId}
-                          </div>
-                          {c.createdAt && (
-                            <div className="text-[11px] text-slate-400">
-                              Submitted {c.createdAt.substring(0, 10)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    {item.category}
+                  </span>
+                  {item.eventDate && (
+                    <span className="text-xs" style={{ color: '#93979f' }}>
+                      Event date: {item.eventDate}
+                    </span>
+                  )}
+                </div>
+                <h1
+                  className="text-2xl sm:text-3xl font-medium tracking-tight"
+                  style={{ color: '#0a0d12', letterSpacing: '-0.02em' }}
+                >
+                  {item.title}
+                </h1>
+              </div>
 
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border ${
-                            isPending
-                              ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : isApproved
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-slate-100 text-slate-700 border-slate-200'
-                          }`}
-                        >
-                          {c.status}
-                        </span>
-                      </div>
+              {/* Structured Attributes Grid */}
+              <div
+                className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 rounded-2xl"
+                style={{ background: '#ebf5ff' }}
+              >
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#93979f' }}>
+                    Type
+                  </span>
+                  <p className="text-xs font-semibold" style={{ color: '#0a0d12' }}>{item.type}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#93979f' }}>
+                    Color
+                  </span>
+                  <p className="text-xs font-semibold" style={{ color: '#0a0d12' }}>{item.color || 'Not specified'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#93979f' }}>
+                    Brand / Model
+                  </span>
+                  <p className="text-xs font-semibold" style={{ color: '#0a0d12' }}>{item.brand || 'Not specified'}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#93979f' }}>
+                    Status
+                  </span>
+                  <p className="text-xs font-semibold" style={{ color: '#0a0d12' }}>{item.status}</p>
+                </div>
+              </div>
+
+              {/* Description Block */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#0a0d12', letterSpacing: '0.04em' }}>
+                  Detailed Description
+                </h3>
+                <div
+                  className="text-sm leading-relaxed p-4 rounded-2xl"
+                  style={{ background: '#ebf5ff', color: '#535862' }}
+                >
+                  {item.description ? (
+                    <p className="whitespace-pre-line">{item.description}</p>
+                  ) : (
+                    <p className="italic" style={{ color: '#93979f' }}>No additional description provided by reporter.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Ownership Claim Section: Logged-in non-owner viewing ACTIVE item */}
+              {canClaim && (
+                <div className="pt-4 border-t space-y-4" style={{ borderColor: '#e8f1f8' }}>
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                      style={{ background: '#cce7ff', color: '#0069e0' }}
+                    >
+                      🛡️
                     </div>
-
-                    {/* Evidence Text Box */}
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
-                        Submitted Evidence:
-                      </div>
-                      <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-lg text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                        {c.evidenceText}
-                      </div>
-                    </div>
-
-                    {/* Actions / Decision Info */}
-                    <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                      {isPending ? (
-                        <div className="flex items-center gap-2.5">
-                          <button
-                            type="button"
-                            disabled={isActing}
-                            onClick={() => handleReviewClaim(c.id, 'APPROVED')}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
-                          >
-                            {isActing ? (
-                              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                            Approve Claim
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isActing}
-                            onClick={() => handleReviewClaim(c.id, 'REJECTED')}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-rose-300 text-rose-700 font-semibold hover:bg-rose-50 disabled:opacity-50 transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Reject Claim
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="text-slate-500 text-xs">
-                          {isApproved && (
-                            <span className="text-emerald-700 font-medium">
-                              Approved {c.reviewedAt ? `on ${c.reviewedAt.substring(0, 10)}` : ''} — item status set to RESOLVED
-                            </span>
-                          )}
-                          {isRejected && (
-                            <span className="text-slate-500 font-medium">
-                              Rejected {c.reviewedAt ? `on ${c.reviewedAt.substring(0, 10)}` : ''}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="text-slate-400 text-[11px]">
-                        Claim #{c.id}
-                      </div>
+                      <h3 className="text-sm font-medium" style={{ color: '#0a0d12' }}>Claim This Possession</h3>
+                      <p className="text-xs" style={{ color: '#93979f' }}>Provide verifiable proof of ownership to the finder.</p>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-      )}
 
-      {/* Potential Matches Section - Strictly Owner-Gated */}
-      {isOwner && (
-        <section className="mt-8 bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden p-6 sm:p-8">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  Potential Matches
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Automatically generated by Smart Matching Engine
-                </p>
-              </div>
-            </div>
-            {!matchesLoading && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                {matches.length} {matches.length === 1 ? 'match' : 'matches'}
-              </span>
-            )}
-          </div>
-
-          {matchesLoading && (
-            <div className="py-8 text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                Scanning for potential matches...
-              </div>
-            </div>
-          )}
-
-          {matchesError && (
-            <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center justify-between">
-              <span>{matchesError}</span>
-              <button
-                type="button"
-                onClick={fetchMatches}
-                className="font-semibold underline hover:no-underline text-rose-800"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          {!matchesLoading && !matchesError && matches.length === 0 && (
-            <div className="text-center py-10 px-4 bg-slate-50 rounded-xl border border-slate-200/70">
-              <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-slate-800">
-                No potential matches found yet
-              </h3>
-              <p className="mt-1 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                The smart matching engine continuously scans newly reported lost and found items.
-                When a high-confidence counterpart is submitted, it will appear here automatically.
-              </p>
-            </div>
-          )}
-
-          {!matchesLoading && !matchesError && matches.length > 0 && (
-            <div className="space-y-4">
-              {matches.map((m) => {
-                const scorePercent = Math.round((m.score || 0) * 100)
-                const isStrong = (m.score || 0) >= 0.85
-                const other = m.matchedItem || {}
-                const isOtherLost = other.type === 'LOST'
-
-                return (
-                  <div
-                    key={m.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-blue-300 hover:shadow-xs transition-all"
-                  >
-                    <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                      {/* Image Thumbnail */}
-                      {other.imageUrl ? (
-                        <img
-                          src={other.imageUrl}
-                          alt={other.title || 'Matched item'}
-                          className="w-16 h-16 sm:w-18 sm:h-18 object-cover rounded-lg border border-slate-200 shrink-0"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-lg bg-slate-100 border border-slate-200 flex flex-col items-center justify-center text-slate-400 shrink-0">
-                          <svg
-                            className="w-6 h-6 opacity-50"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          <span className="text-[10px] text-slate-400 mt-0.5">No image</span>
+                  {claimSuccess ? (
+                    <div
+                      className="p-5 rounded-2xl space-y-2"
+                      style={{ background: '#d3f6e3', color: '#047857', border: '1px solid #a7f3d0' }}
+                    >
+                      <p className="font-semibold text-xs">Claim Submitted Successfully</p>
+                      <p className="text-xs">
+                        The finder will be notified to review your evidence. Once verified, you will receive an alert to arrange recovery.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setClaimSuccess(false)}
+                        className="text-xs font-medium underline hover:no-underline cursor-pointer"
+                        style={{ color: '#065f46' }}
+                      >
+                        Submit additional details
+                      </button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleClaimSubmit} className="space-y-3">
+                      {claimError && (
+                        <div
+                          className="p-3 rounded-xl text-xs"
+                          style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
+                        >
+                          {claimError}
                         </div>
                       )}
+                      <textarea
+                        rows={3}
+                        value={evidenceText}
+                        onChange={(e) => setEvidenceText(e.target.value)}
+                        placeholder="Describe unique identifying marks (e.g., sticker on bottom, lock-screen wallpaper, serial digits, secret scratch)..."
+                        className="w-full text-sm rounded-2xl p-3.5 focus:outline-none focus:ring-2 transition-all"
+                        style={{
+                          background: '#ebf5ff',
+                          border: '1.5px solid #e8f1f8',
+                          color: '#0a0d12',
+                          outlineColor: '#0069e0',
+                        }}
+                        disabled={claimSubmitting}
+                      />
+                      <div className="flex items-center justify-between text-xs" style={{ color: '#93979f' }}>
+                        <span>Private evidence viewed only by the reporter.</span>
+                        <span style={{ color: evidenceText.trim().length >= 10 ? '#93979f' : '#be123c', fontWeight: 500 }}>
+                          {evidenceText.trim().length}/10 min chars
+                        </span>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={claimSubmitting || evidenceText.trim().length < 10}
+                          className="btn-charcoal-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {claimSubmitting ? 'Verifying…' : 'Submit Ownership Claim'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
 
-                      {/* Item Details */}
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+              {/* Logged-Out Prompt */}
+              {isLoggedOutViewer && (
+                <div
+                  className="pt-4 border-t p-6 rounded-2xl text-center space-y-2"
+                  style={{ borderColor: '#e8f1f8', background: '#ebf5ff' }}
+                >
+                  <p className="text-xs font-semibold" style={{ color: '#0a0d12' }}>Is this your item?</p>
+                  <p className="text-xs" style={{ color: '#535862' }}>Sign in with your student account to submit ownership proof.</p>
+                  <div className="pt-2">
+                    <Link to="/login" className="btn-charcoal-sm">
+                      Sign In to Claim
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Resolved Notification */}
+              {!isOwner && isResolved && (
+                <div className="pt-4 border-t" style={{ borderColor: '#e8f1f8' }}>
+                  <div
+                    className="p-4 rounded-2xl text-xs flex items-center gap-2"
+                    style={{ background: '#d3f6e3', color: '#047857', border: '1px solid #a7f3d0' }}
+                  >
+                    <span>✓</span>
+                    <span>This listing has been officially marked as resolved and closed.</span>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+
+        {/* ── Owner Section 1: Claims Management ── */}
+        {isOwner && (
+          <section
+            className="p-8 sm:p-10 space-y-6"
+            style={{
+              background: '#fafdff',
+              borderRadius: '32px',
+              boxShadow: 'rgba(4, 69, 144, 0.05) 0px 4px 16px 0px',
+            }}
+          >
+            <div className="flex items-center justify-between pb-4 border-b" style={{ borderColor: '#e8f1f8' }}>
+              <div>
+                <h2
+                  className="text-lg sm:text-xl font-medium tracking-tight"
+                  style={{ color: '#0a0d12' }}
+                >
+                  Claims on This Item
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: '#93979f' }}>
+                  Review ownership verification submissions from students claiming this possession.
+                </p>
+              </div>
+              {!claimsLoading && (
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ background: '#ebf5ff', color: '#0a0d12' }}
+                >
+                  {claims.length} {claims.length === 1 ? 'claim' : 'claims'}
+                </span>
+              )}
+            </div>
+
+            {claimsLoading && (
+              <div className="py-8 text-center text-xs font-medium" style={{ color: '#93979f' }}>
+                Checking ownership claims…
+              </div>
+            )}
+
+            {claimsError && (
+              <div
+                className="p-4 rounded-2xl text-xs flex items-center justify-between"
+                style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
+              >
+                <span>{claimsError}</span>
+                <button
+                  type="button"
+                  onClick={fetchClaims}
+                  className="font-medium underline cursor-pointer"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {reviewActionError && (
+              <div
+                className="p-4 rounded-2xl text-xs"
+                style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
+              >
+                {reviewActionError}
+              </div>
+            )}
+
+            {!claimsLoading && !claimsError && claims.length === 0 && (
+              <div className="py-8 text-center text-xs" style={{ color: '#93979f' }}>
+                No student has filed a claim on this report yet.
+              </div>
+            )}
+
+            {!claimsLoading && !claimsError && claims.length > 0 && (
+              <div className="space-y-4">
+                {claims.map((c) => {
+                  const isPending = c.status === 'PENDING'
+                  const isApproved = c.status === 'APPROVED'
+
+                  return (
+                    <div
+                      key={c.id}
+                      className="p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4"
+                      style={{ background: '#ebf5ff' }}
+                    >
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center gap-2">
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider ${
-                              isOtherLost
-                                ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                                : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                            }`}
+                            className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+                            style={
+                              isPending
+                                ? { background: '#fff2be', color: '#854d0e' }
+                                : isApproved
+                                ? { background: '#d3f6e3', color: '#047857' }
+                                : { background: '#fff1f2', color: '#be123c' }
+                            }
                           >
-                            {other.type || 'ITEM'}
+                            {c.status}
                           </span>
-                          {other.category && (
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                              {other.category}
-                            </span>
-                          )}
-                          {other.brand && (
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-50 text-slate-600 border border-slate-200">
-                              {other.brand}
+                          <span className="text-xs font-medium" style={{ color: '#0a0d12' }}>
+                            Claimant #{c.claimantId}
+                          </span>
+                          {c.createdAt && (
+                            <span className="text-[11px]" style={{ color: '#93979f' }}>
+                              • {c.createdAt.substring(0, 10)}
                             </span>
                           )}
                         </div>
+                        <p className="text-xs leading-relaxed" style={{ color: '#535862' }}>
+                          <strong style={{ color: '#0a0d12' }}>Evidence:</strong> &ldquo;{c.evidenceText}&rdquo;
+                        </p>
+                      </div>
+
+                      {isPending && item.status === 'ACTIVE' && (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            disabled={reviewingClaimId === c.id}
+                            onClick={() => handleReviewClaim(c.id, 'APPROVE')}
+                            className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors"
+                            style={{ background: '#181d27', color: '#ffffff' }}
+                          >
+                            {reviewingClaimId === c.id ? 'Processing…' : 'Approve Claim'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={reviewingClaimId === c.id}
+                            onClick={() => handleReviewClaim(c.id, 'REJECT')}
+                            className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border"
+                            style={{ borderColor: '#d5e6f0', color: '#535862', background: '#fafdff' }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* ── Owner Section 2: Smart Matching Engine Recommendations ── */}
+        {isOwner && (
+          <section
+            className="p-8 sm:p-10 space-y-6"
+            style={{
+              background: '#fafdff',
+              borderRadius: '32px',
+              boxShadow: 'rgba(4, 69, 144, 0.05) 0px 4px 16px 0px',
+            }}
+          >
+            <div className="flex items-center justify-between pb-4 border-b" style={{ borderColor: '#e8f1f8' }}>
+              <div>
+                <h2
+                  className="text-lg sm:text-xl font-medium tracking-tight"
+                  style={{ color: '#0a0d12' }}
+                >
+                  Smart Matching Engine Suggestions
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: '#93979f' }}>
+                  Automated counterpart recommendations ranked by proximity, category, and keyword analysis.
+                </p>
+              </div>
+              {!matchesLoading && (
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ background: '#cce7ff', color: '#0069e0' }}
+                >
+                  {matches.length} {matches.length === 1 ? 'match' : 'matches'}
+                </span>
+              )}
+            </div>
+
+            {matchesLoading && (
+              <div className="py-8 text-center text-xs font-medium" style={{ color: '#93979f' }}>
+                Scanning database for proximity matches…
+              </div>
+            )}
+
+            {matchesError && (
+              <div
+                className="p-4 rounded-2xl text-xs flex items-center justify-between"
+                style={{ background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
+              >
+                <span>{matchesError}</span>
+                <button
+                  type="button"
+                  onClick={fetchMatches}
+                  className="font-medium underline cursor-pointer"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {!matchesLoading && !matchesError && matches.length === 0 && (
+              <div className="py-8 text-center text-xs" style={{ color: '#93979f' }}>
+                No potential matches detected yet. You will receive an alert when a matching report is filed.
+              </div>
+            )}
+
+            {!matchesLoading && !matchesError && matches.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {matches.map((m) => {
+                  const scorePercent = Math.round((m.score || 0) * 100)
+                  const isStrong = (m.score || 0) >= 0.85
+                  const other = m.matchedItem || {}
+
+                  return (
+                    <div
+                      key={m.id}
+                      className="p-5 rounded-2xl flex flex-col justify-between space-y-4 transition-transform hover:-translate-y-0.5"
+                      style={{ background: '#ebf5ff' }}
+                    >
+                      <div className="flex items-start gap-3.5">
+                        {other.imageUrl ? (
+                          <img
+                            src={other.imageUrl}
+                            alt={other.title || 'Matched item'}
+                            className="w-16 h-16 object-cover rounded-2xl shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 text-xs font-semibold"
+                            style={{ background: '#fafdff', color: '#93979f' }}
+                          >
+                            No Photo
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span
+                              className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                              style={
+                                other.type === 'LOST'
+                                  ? { background: '#fff1f2', color: '#be123c' }
+                                  : { background: '#d3f6e3', color: '#047857' }
+                              }
+                            >
+                              {other.type}
+                            </span>
+                            <span className="text-[10px]" style={{ color: '#93979f' }}>
+                              {other.category}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-medium truncate" style={{ color: '#0a0d12' }}>
+                            {other.title}
+                          </h4>
+                          <p className="text-xs truncate mt-0.5" style={{ color: '#535862' }}>
+                            {other.locationText || 'Campus area'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: '#d5e6f0' }}>
+                        <span
+                          className="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          style={
+                            isStrong
+                              ? { background: '#d3f6e3', color: '#047857' }
+                              : { background: '#cce7ff', color: '#0069e0' }
+                          }
+                        >
+                          {scorePercent}% Match ({isStrong ? 'High' : 'Medium'})
+                        </span>
 
                         <Link
                           to={`/items/${other.id}`}
-                          className="font-semibold text-slate-900 hover:text-blue-600 transition-colors text-base truncate block"
+                          className="btn-charcoal-sm"
                         >
-                          {other.title || 'Untitled Item'}
+                          Inspect Match →
                         </Link>
-
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 mt-1">
-                          {other.color && <span>Color: {other.color}</span>}
-                          {other.eventDate && <span>Date: {other.eventDate}</span>}
-                          {other.locationText && <span>Location: {other.locationText}</span>}
-                        </div>
                       </div>
                     </div>
+                  )
+                })}
+              </div>
+            )}
+          </section>
+        )}
 
-                    {/* Score Badges & Action Link */}
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold border tracking-wide ${
-                            isStrong
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-blue-50 text-blue-700 border-blue-200'
-                          }`}
-                        >
-                          {scorePercent}% Match
-                        </span>
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                            isStrong
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : 'bg-blue-100 text-blue-800 border-blue-300'
-                          }`}
-                        >
-                          {isStrong ? 'Strong Match' : 'Possible Match'}
-                        </span>
-                      </div>
-
-                      <Link
-                        to={`/items/${other.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors shadow-xs"
-                      >
-                        View Details
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-      )}
+      </div>
     </div>
   )
 }

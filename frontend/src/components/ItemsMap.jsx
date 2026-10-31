@@ -35,6 +35,9 @@ function escapeHtml(str) {
  * Renders an interactive Leaflet/OpenStreetMap view plotting markers for all items
  * that possess valid campus latitude/longitude coordinates in the current result set.
  *
+ * Design: Geniestudio daylight notebook style — Bone-white card at 32px radius,
+ * charcoal popup button, pastel status chips.
+ *
  * @param {Object} props
  * @param {Array<Object>} props.items - List of items currently displayed on BrowsePage
  */
@@ -114,24 +117,24 @@ export default function ItemsMap({ items = [] }) {
       bounds.push([lat, lng])
 
       const isLost = item.type === 'LOST'
-      const badgeBg = isLost ? '#fef3c7' : '#d1fae5'
-      const badgeText = isLost ? '#92400e' : '#065f46'
+      const badgeBg = isLost ? '#fff1f2' : '#d3f6e3'
+      const badgeText = isLost ? '#be123c' : '#047857'
 
       const safeTitle = escapeHtml(item.title)
       const safeCategory = escapeHtml(item.category)
       const safeLoc = escapeHtml(item.locationText || '')
 
       const popupHtml = `
-        <div style="font-family: inherit; font-size: 12px; line-height: 1.4; min-width: 170px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-            <span style="background: ${badgeBg}; color: ${badgeText}; font-weight: 700; font-size: 10px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">
+        <div style="font-family: inherit; font-size: 13px; line-height: 1.4; min-width: 180px; padding: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <span style="background: ${badgeBg}; color: ${badgeText}; font-weight: 600; font-size: 10px; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase;">
               ${item.type}
             </span>
-            <span style="color: #64748b; font-size: 10px;">${safeCategory}</span>
+            <span style="color: #93979f; font-size: 11px;">${safeCategory}</span>
           </div>
-          <p style="font-weight: 600; color: #0f172a; margin: 4px 0; font-size: 12px;">${safeTitle}</p>
-          ${safeLoc ? `<p style="color: #64748b; margin: 2px 0 8px 0; font-size: 11px;">📍 ${safeLoc}</p>` : '<div style="margin-bottom: 6px;"></div>'}
-          <a href="/items/${item.id}" id="map-popup-link-${item.id}" style="display: inline-block; width: 100%; text-align: center; background: #4f46e5; color: #ffffff; text-decoration: none; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px;">
+          <p style="font-weight: 600; color: #0a0d12; margin: 4px 0 2px 0; font-size: 13px;">${safeTitle}</p>
+          ${safeLoc ? `<p style="color: #535862; margin: 2px 0 10px 0; font-size: 11px;">📍 ${safeLoc}</p>` : '<div style="margin-bottom: 8px;"></div>'}
+          <a href="/items/${item.id}" id="map-popup-link-${item.id}" style="display: inline-block; width: 100%; text-align: center; background: #181d27; color: #ffffff; text-decoration: none; padding: 6px 12px; border-radius: 9999px; font-weight: 500; font-size: 11px;">
             View Details &rarr;
           </a>
         </div>
@@ -156,17 +159,26 @@ export default function ItemsMap({ items = [] }) {
   return (
     <div
       id="campus-items-map-card"
-      className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-hidden transition-all"
+      className="overflow-hidden transition-all mb-6"
+      style={{
+        background: '#fafdff',
+        borderRadius: '32px',
+        boxShadow: 'rgba(4, 69, 144, 0.05) 0px 4px 16px 0px',
+      }}
     >
       {/* Header Bar */}
-      <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-            🗺️ Campus Map View
+      <div
+        className="px-6 py-4 flex items-center justify-between border-b"
+        style={{ borderColor: '#e8f1f8' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-sm font-medium flex items-center gap-2" style={{ color: '#0a0d12' }}>
+            <span>🗺️</span> Campus Map View
           </span>
           <span
             id="map-count-badge"
-            className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200"
+            className="text-[11px] font-medium px-2.5 py-0.5 rounded-full"
+            style={{ background: '#cce7ff', color: '#0069e0' }}
           >
             {mappedItems.length} {mappedItems.length === 1 ? 'item' : 'items'} mapped
           </span>
@@ -176,7 +188,10 @@ export default function ItemsMap({ items = [] }) {
           id="toggle-map-btn"
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
-          className="text-xs font-semibold text-slate-600 hover:text-slate-900 px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 transition"
+          className="text-xs font-medium px-3.5 py-1.5 rounded-full transition-colors cursor-pointer"
+          style={{ background: '#ebf5ff', color: '#535862' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#0a0d12')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#535862')}
         >
           {isOpen ? 'Hide Map' : 'Show Map'}
         </button>
@@ -187,17 +202,19 @@ export default function ItemsMap({ items = [] }) {
         <div
           id="campus-map-container"
           ref={mapContainerRef}
-          className="w-full h-72 sm:h-80 z-0 bg-slate-100"
+          className="w-full h-72 sm:h-80 z-0"
+          style={{ background: '#ebf5ff' }}
         />
 
         {/* Informative overlay when 0 items on current view have coordinates */}
         {mappedItems.length === 0 && (
           <div
             id="map-empty-overlay"
-            className="absolute bottom-3 left-3 right-3 sm:right-auto sm:max-w-sm pointer-events-none z-[400] bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg p-2.5 shadow-md flex items-center gap-2"
+            className="absolute bottom-4 left-4 right-4 sm:right-auto sm:max-w-sm pointer-events-none z-[400] p-3 rounded-2xl flex items-center gap-2.5 shadow-sm"
+            style={{ background: '#fafdff', border: '1px solid #e8f1f8', color: '#535862' }}
           >
-            <span className="text-slate-400 text-sm">ℹ️</span>
-            <p className="text-xs text-slate-600">
+            <span className="text-sm">📍</span>
+            <p className="text-xs leading-relaxed">
               No items in the current page/filter selection have campus landmark coordinates. Showing general campus view.
             </p>
           </div>

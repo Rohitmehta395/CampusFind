@@ -1,1 +1,174 @@
 @import "tailwindcss";
+
+/* ─── Geniestudio Design System ──────────────────────────────────────────────
+   Soft daylight notebook aesthetic: pale sky-blue canvas, airy Inter display
+   type at weight 500 with tight negative tracking, bone-white cards at 32px
+   radius, charcoal (#181d27) CTAs, and pastel washes (lavender, mint, peach,
+   powder-blue).
+──────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* ── Canvas & Surfaces ── */
+  --color-sky-tint: #ebf5ff;
+  --color-paper-white: #ffffff;
+  --color-bone-white: #fafdff;
+  --color-mist-gray: #f6f7f8;
+
+  /* ── Text ── */
+  --color-ink: #0a0d12;
+  --color-charcoal: #181d27;
+  --color-graphite: #535862;
+  --color-fog: #93979f;
+
+  /* ── Interactive ── */
+  --color-slate-shadow: #3b3d41;
+  --color-iris-blue: #0069e0;
+  --color-sky-blue: #0099ff;
+
+  /* ── Semantic Status ── */
+  --color-lost: #be123c;
+  --color-lost-bg: #fff1f2;
+  --color-lost-border: #fecdd3;
+  --color-found: #047857;
+  --color-found-bg: #d3f6e3;
+  --color-found-border: #a7f3d0;
+  --color-match: #0069e0;
+  --color-match-bg: #cce7ff;
+
+  /* ── Pastel Washes ── */
+  --color-lavender-wash: #f1e6ff;
+  --color-mint-wash: #d3f6e3;
+  --color-powder-blue: #cce7ff;
+  --color-solar-wash: #fff2be;
+  --color-peach-wash: #ffd1b8;
+
+  /* ── Border ── */
+  --color-border-light: #e8f1f8;
+  --color-border-default: #d5e6f0;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* ── Shadows ── */
+  --shadow-lg: rgba(4, 69, 144, 0.08) 0px 14px 20px 4px;
+  --shadow-subtle: rgba(10, 13, 18, 0.8) 0px 1px 2px 0px, rgb(10, 13, 18) 0px 0px 0px 1px;
+  --shadow-card: rgba(4, 69, 144, 0.05) 0px 4px 16px 0px;
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+}
+
+html {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: #ebf5ff;
+  color: #0a0d12;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: #181d27;
+  color: #ffffff;
+}
+
+/* ─── Focus Ring ─────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid #0069e0;
+  outline-offset: 2px;
+}
+
+/* ─── Display Typography Helper Classes ──────────────────────────────────── */
+.display-heading {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.heading-lg {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+/* ─── Geniestudio Button Primitives ──────────────────────────────────────── */
+.btn-charcoal {
+  background-color: #181d27;
+  color: #ffffff;
+  border-radius: 9999px;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  box-shadow: rgba(10, 13, 18, 0.8) 0px 1px 2px 0px, rgb(10, 13, 18) 0px 0px 0px 1px;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-charcoal:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.btn-charcoal:active {
+  transform: translateY(0);
+}
+
+.btn-charcoal-sm {
+  background-color: #181d27;
+  color: #ffffff;
+  border-radius: 9999px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  box-shadow: rgba(10, 13, 18, 0.8) 0px 1px 2px 0px, rgb(10, 13, 18) 0px 0px 0px 1px;
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-charcoal-sm:hover {
+  opacity: 0.88;
+}
+
+/* ─── Geniestudio Card Primitive ─────────────────────────────────────────── */
+.g-card {
+  background-color: #fafdff;
+  border-radius: 32px;
+  padding: 40px;
+}
+
+.g-card-sm {
+  background-color: #fafdff;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+/* ─── Motion Preference ──────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
