@@ -12,6 +12,7 @@ import ReportFoundPage from './pages/ReportFoundPage'
 import BrowsePage from './pages/BrowsePage'
 import ItemDetailPage from './pages/ItemDetailPage'
 import NotificationsPage from './pages/NotificationsPage'
+import MessagesPage from './pages/MessagesPage'
 
 /**
  * Root Application component configuring authentication provider and client-side routes.
@@ -57,6 +58,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <NotificationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <ProtectedRoute>
+                    <MessagesPage />
                   </ProtectedRoute>
                 }
               />

@@ -4,6 +4,7 @@ import { getItemByIdRequest } from '../api/items'
 import { getItemMatchesRequest } from '../api/matches'
 import { submitClaimRequest, getItemClaimsRequest, reviewClaimRequest } from '../api/claims'
 import { useAuth } from '../context/AuthContext'
+import ChatModal from '../components/ChatModal'
 
 /**
  * Public item detail page presenting the full metadata and description of a single item.
@@ -42,6 +43,24 @@ export default function ItemDetailPage() {
   const [claimSubmitting, setClaimSubmitting] = useState(false)
   const [claimError, setClaimError] = useState('')
   const [claimSuccess, setClaimSuccess] = useState(false)
+
+  // Direct chat modal state
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatTargetUserId, setChatTargetUserId] = useState(null)
+  const [chatTargetClaim, setChatTargetClaim] = useState(null)
+
+  const handleOpenChatWithClaimant = (claimRecord) => {
+    setChatTargetUserId(claimRecord.claimantId)
+    setChatTargetClaim(claimRecord)
+    setChatOpen(true)
+  }
+
+  const handleOpenChatWithReporter = () => {
+    if (!item?.reporterId) return
+    setChatTargetUserId(item.reporterId)
+    setChatTargetClaim(null)
+    setChatOpen(true)
+  }
 
   // Determine ownership: authenticated user's ID must match item's reporterId
   const isOwner = Boolean(user && item && Number(user.id) === Number(item.reporterId))
@@ -474,21 +493,31 @@ export default function ItemDetailPage() {
 
                   {claimSuccess ? (
                     <div
-                      className="p-5 rounded-2xl space-y-2"
+                      className="p-5 rounded-2xl space-y-3"
                       style={{ background: '#d3f6e3', color: '#047857', border: '1px solid #a7f3d0' }}
                     >
                       <p className="font-semibold text-xs">Claim Submitted Successfully</p>
                       <p className="text-xs">
                         The finder will be notified to review your evidence. Once verified, you will receive an alert to arrange recovery.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => setClaimSuccess(false)}
-                        className="text-xs font-medium underline hover:no-underline cursor-pointer"
-                        style={{ color: '#065f46' }}
-                      >
-                        Submit additional details
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleOpenChatWithReporter}
+                          className="btn-charcoal-sm flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>💬</span>
+                          <span>Message Finder Directly</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClaimSuccess(false)}
+                          className="text-xs font-medium underline hover:no-underline cursor-pointer"
+                          style={{ color: '#065f46' }}
+                        >
+                          Submit additional details
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <form onSubmit={handleClaimSubmit} className="space-y-3">
@@ -520,7 +549,16 @@ export default function ItemDetailPage() {
                           {evidenceText.trim().length}/10 min chars
                         </span>
                       </div>
-                      <div className="flex justify-end">
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleOpenChatWithReporter}
+                          className="px-3.5 py-2 rounded-full text-xs font-medium cursor-pointer border flex items-center gap-1.5 hover:bg-[#ebf5ff] transition-colors"
+                          style={{ borderColor: '#d5e6f0', color: '#535862', background: '#ffffff' }}
+                        >
+                          <span>💬</span>
+                          <span>Message Finder</span>
+                        </button>
                         <button
                           type="submit"
                           disabled={claimSubmitting || evidenceText.trim().length < 10}
@@ -676,28 +714,40 @@ export default function ItemDetailPage() {
                         </p>
                       </div>
 
-                      {isPending && item.status === 'ACTIVE' && (
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            disabled={reviewingClaimId === c.id}
-                            onClick={() => handleReviewClaim(c.id, 'APPROVED')}
-                            className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors"
-                            style={{ background: '#181d27', color: '#ffffff' }}
-                          >
-                            {reviewingClaimId === c.id ? 'Processing…' : 'Approve Claim'}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={reviewingClaimId === c.id}
-                            onClick={() => handleReviewClaim(c.id, 'REJECTED')}
-                            className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border"
-                            style={{ borderColor: '#d5e6f0', color: '#535862', background: '#fafdff' }}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenChatWithClaimant(c)}
+                          className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border flex items-center gap-1.5"
+                          style={{ borderColor: '#0069e0', color: '#0069e0', background: '#ffffff' }}
+                        >
+                          <span>💬</span>
+                          <span>Message Claimant</span>
+                        </button>
+
+                        {isPending && item.status === 'ACTIVE' && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={reviewingClaimId === c.id}
+                              onClick={() => handleReviewClaim(c.id, 'APPROVED')}
+                              className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors"
+                              style={{ background: '#181d27', color: '#ffffff' }}
+                            >
+                              {reviewingClaimId === c.id ? 'Processing…' : 'Approve Claim'}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={reviewingClaimId === c.id}
+                              onClick={() => handleReviewClaim(c.id, 'REJECTED')}
+                              className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border"
+                              style={{ borderColor: '#d5e6f0', color: '#535862', background: '#fafdff' }}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   )
                 })}
@@ -847,6 +897,18 @@ export default function ItemDetailPage() {
         )}
 
       </div>
+
+      {/* ── Direct Chat Modal ── */}
+      <ChatModal
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        otherUserId={chatTargetUserId}
+        item={item}
+        claim={chatTargetClaim}
+        onClaimReviewed={async () => {
+          await Promise.all([fetchClaims(), fetchItem()])
+        }}
+      />
     </div>
   )
 }

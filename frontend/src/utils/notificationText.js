@@ -89,6 +89,21 @@ export function getNotificationDetails(notification) {
       }
     }
 
+    case 'NEW_MESSAGE': {
+      const convId = payload.conversationId
+      const chatHref = convId ? `/messages?conversationId=${convId}` : '/messages'
+      if (itemId) {
+        return {
+          message: `New message regarding item #${itemId}`,
+          href: chatHref,
+        }
+      }
+      return {
+        message: 'You received a new message from a student',
+        href: chatHref,
+      }
+    }
+
     default:
       return {
         message: 'You have a new notification',

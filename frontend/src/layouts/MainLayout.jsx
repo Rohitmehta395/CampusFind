@@ -144,6 +144,7 @@ export default function MainLayout() {
             <NavLink to="/" end className={navLinkClasses}>Home</NavLink>
             <NavLink to="/browse" className={navLinkClasses}>Browse Directory</NavLink>
             <NavLink to="/my-listings" className={navLinkClasses}>My Listings</NavLink>
+            {user && <NavLink to="/messages" className={navLinkClasses}>Messages</NavLink>}
           </nav>
 
           {/* Desktop Right Actions */}
@@ -283,6 +284,16 @@ export default function MainLayout() {
 
                       {/* Dropdown Navigation Links */}
                       <Link
+                        to="/messages"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-[#ebf5ff] group"
+                        style={{ color: '#0a0d12' }}
+                      >
+                        <span className="text-sm">💬</span>
+                        <span className="flex-1">Messages & Chats</span>
+                      </Link>
+
+                      <Link
                         to="/my-listings"
                         onClick={() => setUserDropdownOpen(false)}
                         className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-[#ebf5ff] group"
@@ -386,6 +397,7 @@ export default function MainLayout() {
             <NavLink to="/" end className={mobileNavLinkClasses}>Home</NavLink>
             <NavLink to="/browse" className={mobileNavLinkClasses}>Browse Directory</NavLink>
             <NavLink to="/my-listings" className={mobileNavLinkClasses}>My Listings</NavLink>
+            {user && <NavLink to="/messages" className={mobileNavLinkClasses}>Messages</NavLink>}
 
             <div className="pt-2 border-t grid grid-cols-2 gap-2" style={{ borderColor: '#e8f1f8' }}>
               <Link
