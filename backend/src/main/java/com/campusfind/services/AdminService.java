@@ -234,11 +234,11 @@ public class AdminService {
         if (decision == null || decision.trim().isEmpty()) {
             throw new ValidationException("Decision is required", "decision");
         }
-        String cleanDecision = decision.trim();
+        String cleanDecision = decision.trim().toUpperCase();
         boolean approve;
-        if ("APPROVED".equals(cleanDecision)) {
+        if ("APPROVED".equals(cleanDecision) || "APPROVE".equals(cleanDecision)) {
             approve = true;
-        } else if ("REJECTED".equals(cleanDecision)) {
+        } else if ("REJECTED".equals(cleanDecision) || "REJECT".equals(cleanDecision)) {
             approve = false;
         } else {
             throw new ValidationException("Invalid decision: " + decision + ". Expected APPROVED or REJECTED", "decision");

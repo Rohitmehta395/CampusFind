@@ -681,7 +681,7 @@ export default function ItemDetailPage() {
                           <button
                             type="button"
                             disabled={reviewingClaimId === c.id}
-                            onClick={() => handleReviewClaim(c.id, 'APPROVE')}
+                            onClick={() => handleReviewClaim(c.id, 'APPROVED')}
                             className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors"
                             style={{ background: '#181d27', color: '#ffffff' }}
                           >
@@ -690,7 +690,7 @@ export default function ItemDetailPage() {
                           <button
                             type="button"
                             disabled={reviewingClaimId === c.id}
-                            onClick={() => handleReviewClaim(c.id, 'REJECT')}
+                            onClick={() => handleReviewClaim(c.id, 'REJECTED')}
                             className="px-3.5 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border"
                             style={{ borderColor: '#d5e6f0', color: '#535862', background: '#fafdff' }}
                           >

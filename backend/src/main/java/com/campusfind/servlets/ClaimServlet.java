@@ -93,9 +93,9 @@ public class ClaimServlet extends BaseServlet {
 
             String dec = dto.getDecision().trim().toUpperCase();
             boolean approve;
-            if ("APPROVED".equals(dec)) {
+            if ("APPROVED".equals(dec) || "APPROVE".equals(dec)) {
                 approve = true;
-            } else if ("REJECTED".equals(dec)) {
+            } else if ("REJECTED".equals(dec) || "REJECT".equals(dec)) {
                 approve = false;
             } else {
                 throw new ValidationException("Invalid decision: " + dto.getDecision() + ". Expected APPROVED or REJECTED", "decision");
