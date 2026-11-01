@@ -238,10 +238,9 @@ export default function MessagesPage() {
     if (!filterQuery.trim()) return true
     const q = filterQuery.toLowerCase()
     const nameMatch = c.otherUser?.name?.toLowerCase().includes(q)
-    const emailMatch = c.otherUser?.email?.toLowerCase().includes(q)
     const itemMatch = String(c.itemId).includes(q)
     const lastMsgMatch = c.lastMessage?.text?.toLowerCase().includes(q)
-    return nameMatch || emailMatch || itemMatch || lastMsgMatch
+    return nameMatch || itemMatch || lastMsgMatch
   })
 
   return (
@@ -448,8 +447,9 @@ export default function MessagesPage() {
                     <h2 className="font-semibold text-sm truncate" style={{ color: '#0a0d12' }}>
                       {activeConversation?.otherUser?.name || 'Student'}
                     </h2>
-                    <p className="text-xs truncate" style={{ color: '#93979f' }}>
-                      {activeConversation?.otherUser?.email}
+                    <p className="text-xs truncate flex items-center gap-1" style={{ color: '#535862' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      <span>Verified Student</span>
                     </p>
                   </div>
                 </div>

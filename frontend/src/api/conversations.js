@@ -5,7 +5,7 @@ import axiosClient from './axiosClient'
  *
  * @param {number|string} otherUserId - The ID of the other participant (finder or claimant)
  * @param {number|string|null} itemId - The ID of the item being discussed
- * @returns {Promise<{id: number, otherUser: {id: number, name: string, email: string}, itemId: number|null, createdAt: string}>}
+ * @returns {Promise<{id: number, otherUser: {id: number, name: string}, itemId: number|null, createdAt: string}>}
  */
 export async function startConversationRequest(otherUserId, itemId = null) {
   const response = await axiosClient.post('/api/conversations', {
@@ -21,7 +21,7 @@ export async function startConversationRequest(otherUserId, itemId = null) {
  * @returns {Promise<Array<{
  *   id: number,
  *   itemId: number|null,
- *   otherUser: {id: number, name: string, email: string},
+ *   otherUser: {id: number, name: string},
  *   lastMessage: {text: string, senderId: number, createdAt: string}|null,
  *   unreadCount: number,
  *   createdAt: string

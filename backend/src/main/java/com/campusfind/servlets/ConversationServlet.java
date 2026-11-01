@@ -183,8 +183,7 @@ public class ConversationServlet extends BaseServlet {
         sb.append("\"id\":").append(c.getId()).append(",");
         sb.append("\"otherUser\":{");
         sb.append("\"id\":").append(otherUser.getId()).append(",");
-        sb.append("\"name\":").append(quote(otherUser.getName())).append(",");
-        sb.append("\"email\":").append(quote(otherUser.getEmail()));
+        sb.append("\"name\":").append(quote(otherUser.getName()));
         sb.append("},");
         sb.append("\"itemId\":").append(c.getItemId() != null ? c.getItemId() : "null").append(",");
         String createdAtStr = (c.getCreatedAt() != null)
@@ -205,8 +204,7 @@ public class ConversationServlet extends BaseServlet {
             sb.append("\"id\":").append(s.getId()).append(",");
             sb.append("\"otherUser\":{");
             sb.append("\"id\":").append(s.getOtherUserId()).append(",");
-            sb.append("\"name\":").append(quote(s.getOtherUserName())).append(",");
-            sb.append("\"email\":").append(quote(s.getOtherUserEmail()));
+            sb.append("\"name\":").append(quote(s.getOtherUserName()));
             sb.append("},");
             sb.append("\"itemId\":").append(s.getItemId() != null ? s.getItemId() : "null").append(",");
 

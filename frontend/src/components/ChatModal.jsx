@@ -245,11 +245,10 @@ export default function ChatModal({
                     title="Live connection"
                   />
                 </div>
-                {otherUser?.email && (
-                  <p className="text-xs truncate" style={{ color: '#93979f' }}>
-                    {otherUser.email}
-                  </p>
-                )}
+                <p className="text-xs truncate flex items-center gap-1" style={{ color: '#535862' }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                  <span>Verified Student</span>
+                </p>
               </div>
             </div>
 
