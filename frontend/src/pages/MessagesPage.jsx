@@ -61,9 +61,11 @@ export default function MessagesPage() {
         ? Number(searchParams.get('conversationId'))
         : null
 
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768
+
       if (paramConvId) {
         setActiveConversationId(paramConvId)
-      } else if (selectInitial && data && data.length > 0 && !activeConversationId) {
+      } else if (selectInitial && isDesktop && data && data.length > 0 && !activeConversationId) {
         setActiveConversationId(data[0].id)
       }
     } catch (err) {
@@ -244,21 +246,25 @@ export default function MessagesPage() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-1 flex flex-col">
-      {/* ── Page Header ── */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="max-w-7xl mx-auto px-2 sm:px-6 py-2 sm:py-6 w-full flex-1 flex flex-col h-[calc(100dvh-70px)] sm:h-[calc(100vh-140px)] min-h-[500px]">
+      {/* ── Page Header: hidden on mobile when viewing an active conversation to maximize chat viewport ── */}
+      <div
+        className={`mb-2 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 shrink-0 ${
+          activeConversationId ? 'hidden md:flex' : 'flex'
+        }`}
+      >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight" style={{ color: '#0a0d12' }}>
+          <h1 className="text-xl sm:text-3xl font-semibold tracking-tight" style={{ color: '#0a0d12' }}>
             Messages & Handover Chat
           </h1>
-          <p className="text-sm mt-1" style={{ color: '#535862' }}>
+          <p className="text-xs sm:text-sm mt-0.5 sm:mt-1" style={{ color: '#535862' }}>
             Communicate directly with students who have or claimed your items to coordinate safe returns.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             to="/browse"
-            className="px-4 py-2 rounded-full text-xs font-medium border hover:bg-white transition-all"
+            className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-medium border hover:bg-white transition-all shrink-0"
             style={{ borderColor: '#d5e6f0', color: '#535862', background: '#fafdff' }}
           >
             ← Back to Browse
@@ -268,21 +274,21 @@ export default function MessagesPage() {
 
       {/* ── Main Chat Interface Box ── */}
       <div
-        className="flex-1 flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-lg min-h-[640px] max-h-[780px]"
+        className="flex-1 flex flex-col md:flex-row rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg border min-h-0"
         style={{
           background: '#ffffff',
-          border: '1.5px solid #e8f1f8',
+          borderColor: '#e8f1f8',
         }}
       >
         {/* ── Left Sidebar: Conversations List ── */}
         <aside
-          className={`w-full md:w-80 lg:w-96 flex flex-col border-r shrink-0 ${
+          className={`w-full md:w-80 lg:w-96 flex flex-col border-r shrink-0 h-full min-h-0 ${
             activeConversationId ? 'hidden md:flex' : 'flex'
           }`}
           style={{ borderColor: '#e8f1f8', background: '#fafdff' }}
         >
           {/* Search Bar */}
-          <div className="p-4 border-b" style={{ borderColor: '#e8f1f8' }}>
+          <div className="p-3 sm:p-4 border-b" style={{ borderColor: '#e8f1f8' }}>
             <div className="relative">
               <input
                 type="text"
@@ -418,15 +424,18 @@ export default function MessagesPage() {
             <>
               {/* ── Active Chat Header ── */}
               <header
-                className="p-4 sm:px-6 border-b flex items-center justify-between gap-4 shrink-0"
+                className="p-3 sm:px-6 sm:py-4 border-b flex items-center justify-between gap-2 sm:gap-4 shrink-0"
                 style={{ background: '#fafdff', borderColor: '#e8f1f8' }}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   {/* Mobile Back Button */}
                   <button
                     type="button"
-                    onClick={() => setActiveConversationId(null)}
-                    className="md:hidden p-2 -ml-2 rounded-full hover:bg-[#ebf5ff] text-[#535862]"
+                    onClick={() => {
+                      setActiveConversationId(null)
+                      setSearchParams({})
+                    }}
+                    className="md:hidden p-1.5 -ml-1 rounded-full hover:bg-[#ebf5ff] text-[#535862] cursor-pointer"
                     aria-label="Back to conversations"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,7 +444,7 @@ export default function MessagesPage() {
                   </button>
 
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
+                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
                     style={{ background: '#ebf5ff', color: '#0069e0' }}
                   >
                     {activeConversation?.otherUser?.name
@@ -444,10 +453,10 @@ export default function MessagesPage() {
                   </div>
 
                   <div className="min-w-0">
-                    <h2 className="font-semibold text-sm truncate" style={{ color: '#0a0d12' }}>
+                    <h2 className="font-semibold text-xs sm:text-sm truncate" style={{ color: '#0a0d12' }}>
                       {activeConversation?.otherUser?.name || 'Student'}
                     </h2>
-                    <p className="text-xs truncate flex items-center gap-1" style={{ color: '#535862' }}>
+                    <p className="text-[11px] sm:text-xs truncate flex items-center gap-1" style={{ color: '#535862' }}>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                       <span>Verified Student</span>
                     </p>
@@ -456,14 +465,15 @@ export default function MessagesPage() {
 
                 {/* Right Item Badge & Link */}
                 {activeItem && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <Link
                       to={`/items/${activeItem.id}`}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium border hover:bg-[#ebf5ff] transition-all flex items-center gap-1.5"
+                      className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium border hover:bg-[#ebf5ff] transition-all flex items-center gap-1 shrink-0"
                       style={{ borderColor: '#d5e6f0', color: '#0069e0', background: '#ffffff' }}
+                      title={activeItem.title}
                     >
-                      <span className="font-semibold">Item:</span>
-                      <span className="truncate max-w-[140px] sm:max-w-[200px]">{activeItem.title}</span>
+                      <span className="hidden sm:inline font-semibold">Item:</span>
+                      <span className="truncate max-w-[85px] xs:max-w-[120px] sm:max-w-[180px]">{activeItem.title}</span>
                       <span>→</span>
                     </Link>
                   </div>
@@ -472,7 +482,7 @@ export default function MessagesPage() {
 
               {/* ── Message Log Stream ── */}
               <div
-                className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3"
+                className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2.5 sm:space-y-3"
                 style={{ background: '#fafdff' }}
               >
                 {messagesLoading && (
@@ -488,7 +498,7 @@ export default function MessagesPage() {
                 )}
 
                 {!messagesLoading && messages.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-2">
+                  <div className="h-full flex flex-col items-center justify-center text-center p-4 sm:p-6 space-y-2">
                     <div
                       className="w-12 h-12 rounded-full flex items-center justify-center text-xl"
                       style={{ background: '#ebf5ff', color: '#0069e0' }}
@@ -514,7 +524,7 @@ export default function MessagesPage() {
                         className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} space-y-1`}
                       >
                         <div
-                          className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm ${
+                          className={`max-w-[88%] sm:max-w-[70%] px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words shadow-xs ${
                             isMine ? 'rounded-br-sm' : 'rounded-bl-sm'
                           }`}
                           style={
@@ -541,16 +551,16 @@ export default function MessagesPage() {
 
               {/* ── Handover Quick Questions Helpers ── */}
               <div
-                className="px-4 py-2 border-t flex items-center gap-2 overflow-x-auto shrink-0"
+                className="px-2.5 sm:px-4 py-1.5 sm:py-2 border-t flex items-center gap-1.5 sm:gap-2 overflow-x-auto shrink-0 no-scrollbar"
                 style={{ background: '#ffffff', borderColor: '#f0f4f8' }}
               >
-                <span className="text-[11px] font-medium shrink-0" style={{ color: '#93979f' }}>
-                  Quick Suggestions:
+                <span className="text-[10px] sm:text-[11px] font-medium shrink-0" style={{ color: '#93979f' }}>
+                  Quick:
                 </span>
                 <button
                   type="button"
                   onClick={() => handleQuickQuestion('Can you describe any unique marks, stickers, or wallpaper?')}
-                  className="px-2.5 py-1 rounded-full text-[11px] hover:bg-[#ebf5ff] transition-colors shrink-0"
+                  className="px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] hover:bg-[#ebf5ff] transition-colors shrink-0"
                   style={{ background: '#f4f9fd', color: '#535862', border: '1px solid #e8f1f8' }}
                 >
                   Ask for unique marks
@@ -558,7 +568,7 @@ export default function MessagesPage() {
                 <button
                   type="button"
                   onClick={() => handleQuickQuestion('Can we meet outside the campus library service desk?')}
-                  className="px-2.5 py-1 rounded-full text-[11px] hover:bg-[#ebf5ff] transition-colors shrink-0"
+                  className="px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] hover:bg-[#ebf5ff] transition-colors shrink-0"
                   style={{ background: '#f4f9fd', color: '#535862', border: '1px solid #e8f1f8' }}
                 >
                   Meet at Library Desk
@@ -566,7 +576,7 @@ export default function MessagesPage() {
                 <button
                   type="button"
                   onClick={() => handleQuickQuestion('I handed the item over to Campus Security Office.')}
-                  className="px-2.5 py-1 rounded-full text-[11px] hover:bg-[#ebf5ff] transition-colors shrink-0"
+                  className="px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] hover:bg-[#ebf5ff] transition-colors shrink-0"
                   style={{ background: '#f4f9fd', color: '#535862', border: '1px solid #e8f1f8' }}
                 >
                   Left with Campus Security
@@ -575,10 +585,10 @@ export default function MessagesPage() {
 
               {/* ── Message Input Bar ── */}
               <footer
-                className="p-3 sm:p-4 border-t shrink-0"
+                className="p-2 sm:p-4 border-t shrink-0"
                 style={{ background: '#ffffff', borderColor: '#e8f1f8' }}
               >
-                <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+                <form onSubmit={handleSendMessage} className="flex items-end gap-1.5 sm:gap-2">
                   <textarea
                     ref={inputRef}
                     rows={1}
@@ -590,10 +600,10 @@ export default function MessagesPage() {
                         handleSendMessage()
                       }
                     }}
-                    placeholder="Type a message (Enter to send, Shift+Enter for new line)..."
+                    placeholder="Type a message..."
                     disabled={messagesLoading || sending || !activeConversationId}
                     maxLength={2000}
-                    className="flex-1 resize-none rounded-2xl p-3 text-sm focus:outline-none focus:ring-2 transition-all max-h-32"
+                    className="flex-1 resize-none rounded-2xl p-2.5 sm:p-3 text-sm focus:outline-none focus:ring-2 transition-all max-h-24 sm:max-h-32"
                     style={{
                       background: '#ebf5ff',
                       border: '1.5px solid #e8f1f8',
@@ -604,8 +614,9 @@ export default function MessagesPage() {
                   <button
                     type="submit"
                     disabled={!text.trim() || sending || !activeConversationId}
-                    className="px-4 py-3 rounded-2xl font-semibold text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center shrink-0"
+                    className="w-10 h-10 sm:w-auto sm:px-4 sm:py-3 rounded-2xl font-semibold text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center shrink-0"
                     style={{ background: '#181d27', color: '#ffffff' }}
+                    aria-label="Send message"
                   >
                     {sending ? (
                       '…'
@@ -616,8 +627,9 @@ export default function MessagesPage() {
                     )}
                   </button>
                 </form>
-                <div className="flex items-center justify-between pt-1.5 px-1 text-[11px]" style={{ color: '#93979f' }}>
-                  <span>Press Enter to send</span>
+                <div className="flex items-center justify-between pt-1 px-1 text-[10px] sm:text-[11px]" style={{ color: '#93979f' }}>
+                  <span className="hidden sm:inline">Press Enter to send</span>
+                  <span className="sm:hidden"></span>
                   <span>{text.length}/2000</span>
                 </div>
               </footer>
