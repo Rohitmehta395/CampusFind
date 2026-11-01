@@ -358,7 +358,7 @@ export default function MessagesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
                         <span className="font-semibold text-xs truncate" style={{ color: '#0a0d12' }}>
-                          {c.otherUser?.name || `User #${c.otherUser?.id || ''}`}
+                          {c.otherUser?.name || 'Student'}
                         </span>
                         {c.lastMessage?.createdAt && (
                           <span className="text-[10px] shrink-0" style={{ color: '#93979f' }}>

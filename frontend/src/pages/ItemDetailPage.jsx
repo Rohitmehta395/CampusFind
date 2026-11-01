@@ -700,12 +700,9 @@ export default function ItemDetailPage() {
                           >
                             {c.status}
                           </span>
-                          <span className="text-xs font-medium" style={{ color: '#0a0d12' }}>
-                            Claimant #{c.claimantId}
-                          </span>
                           {c.createdAt && (
                             <span className="text-[11px]" style={{ color: '#93979f' }}>
-                              • {c.createdAt.substring(0, 10)}
+                              Submitted on {c.createdAt.substring(0, 10)}
                             </span>
                           )}
                         </div>
